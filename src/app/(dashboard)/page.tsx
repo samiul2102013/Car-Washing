@@ -15,6 +15,13 @@ export default function DashboardPage() {
     setLoading(false);
   }, []);
 
+  const handleRefresh = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+    }, 500);
+  };
+
   if (!mounted || loading) {
     return <DashboardLoadingSkeleton />;
   }
@@ -62,7 +69,10 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 h-[46px] px-6 bg-dark-50 hover:bg-dark-50/80 border border-dark-100 text-main-font rounded-full text-xs font-bold transition-all duration-200 active:scale-[0.98] shadow-sm cursor-pointer">
+          <button 
+            onClick={handleRefresh}
+            className="flex items-center gap-2 h-[46px] px-6 bg-dark-50 hover:bg-dark-50/80 border border-dark-100 text-main-font rounded-full text-xs font-bold transition-all duration-200 active:scale-[0.98] shadow-sm cursor-pointer"
+          >
             <Icon icon="solar:restart-linear" className="w-4.5 h-4.5 text-dark-200" />
             Refresh
           </button>

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { userService } from '../../../services';
 import { User, UserStatus } from '../../../types';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/table';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -198,10 +199,10 @@ export default function UsersPage() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => { setLoading(true); fetchUsers(); }}
             className="flex items-center gap-2 h-[46px] px-6 bg-[#FAFBFD] hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-xs font-bold transition-all duration-200 active:scale-[0.98] shadow-sm cursor-pointer"
           >
-            <Icon icon="solar:restart-linear" className="w-4.5 h-4.5 text-slate-500" />
+            <Icon icon="solar:restart-linear" className={`w-4.5 h-4.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           
@@ -277,39 +278,39 @@ export default function UsersPage() {
       {/* 3. Table Directory Listing (Figma screenshot: compact, border-b header, no grey bg, border-slate-100) */}
       <div className="bg-white border border-slate-100 rounded-[20px] shadow-sm overflow-hidden p-4">
         <div className="overflow-x-auto w-full">
-          <table className="w-full text-left text-xs text-slate-500 min-w-[800px]">
-            <thead>
-              <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                <th className="px-4 py-3 pb-3.5 font-extrabold">Customer Name</th>
-                <th className="py-3 pb-3.5 font-extrabold">Status</th>
-                <th className="py-3 pb-3.5 font-extrabold">Orders</th>
-                <th className="py-3 pb-3.5 font-extrabold text-right pr-12">Total Spent</th>
-                <th className="py-3 pb-3.5 font-extrabold">Joined Date</th>
-                <th className="px-4 py-3 pb-3.5 text-center font-extrabold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100/60">
+          <Table className="min-w-[800px]">
+            <TableHeader>
+              <TableRow className="bg-transparent">
+                <TableHead className="pl-4 w-[280px]">Name</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Orders</TableHead>
+                <TableHead className="text-right pr-12">Total Spent</TableHead>
+                <TableHead>Joined Date</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
-                  <tr 
+                  <TableRow 
                     key={user.id}
-                    className="hover:bg-slate-50/50 cursor-pointer transition-colors duration-150 group"
+                    className="cursor-pointer"
                     onClick={() => selectUser(user.id)}
                   >
                     {/* User Profile Column - Avatar-less compact styling */}
-                    <td className="px-4 py-3">
+                    <TableCell className="pl-4 w-[280px]">
                       <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-[#2D2F33] leading-normal tracking-tight group-hover:text-[#FF8A48] transition-colors">
+                        <span className="text-xs font-bold text-main-font leading-normal tracking-tight group-hover:text-[#FF8A48] transition-colors">
                           {user.name}
                         </span>
-                        <span className="text-[9.5px] text-slate-400/80 tracking-tight leading-none mt-0.5">
+                        <span className="text-[11px] text-dark-200 tracking-tight leading-none mt-0.5">
                           {user.email}
                         </span>
                       </div>
-                    </td>
+                    </TableCell>
 
                     {/* Status Column (Figma: Uppercase capsule badge with border matching color) */}
-                    <td className="py-3">
+                    <TableCell>
                       <span className={`inline-flex items-center px-3.5 py-0.5 rounded-full text-[9px] font-black tracking-wider border uppercase
                         ${user.status === 'active' 
                           ? 'bg-[#E6F4EA]/60 text-[#137333] border-[#137333]/15' 
@@ -320,26 +321,26 @@ export default function UsersPage() {
                       `}>
                         {user.status === 'suspended' ? 'Blocked' : user.status === 'active' ? 'Active' : 'Pending'}
                       </span>
-                    </td>
+                    </TableCell>
 
                     {/* Orders Column */}
-                    <td className="py-3 text-xs font-semibold text-slate-550">
+                    <TableCell className="text-xs font-semibold text-dark-200">
                       {(user as any).orders ?? 14}
-                    </td>
+                    </TableCell>
 
                     {/* Total Spent Column (Figma: € Symbol regular, balance bold, right-aligned) */}
-                    <td className="py-3 text-xs text-right pr-12">
-                      <span className="text-slate-400 font-normal mr-1.5">€</span>
-                      <span className="text-slate-800 font-extrabold">{(user as any).totalSpent ?? 250}</span>
-                    </td>
+                    <TableCell className="text-xs text-right pr-12">
+                      <span className="text-dark-200 font-normal mr-1.5">€</span>
+                      <span className="text-main-font font-extrabold">{(user as any).totalSpent ?? 250}</span>
+                    </TableCell>
 
                     {/* Joined Date Column */}
-                    <td className="py-3 text-xs font-semibold text-slate-400">
+                    <TableCell className="text-xs font-semibold text-dark-200">
                       {new Date(user.createdAt).toLocaleDateString('en-GB')}
-                    </td>
+                    </TableCell>
 
                     {/* Action Eye Button */}
-                    <td className="px-4 py-3 text-center">
+                    <TableCell className="text-center">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -347,20 +348,20 @@ export default function UsersPage() {
                         }}
                         className="p-1.5 bg-[#FAFBFD] hover:bg-[#E9EBEF] text-[#5C5F66] rounded-[6px] border border-slate-200/60 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
                       >
-                        <Icon icon="solar:eye-linear" className="w-3.5 h-3.5" />
+                        <Icon icon="solar:eye-linear" className="w-4 h-4" />
                       </button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400 font-semibold text-xs">
+                <TableRow>
+                  <TableCell colSpan={6} className="py-8 text-center text-dark-200 font-semibold text-xs">
                     No users matching search filters.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 

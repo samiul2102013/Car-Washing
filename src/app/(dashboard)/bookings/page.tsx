@@ -218,10 +218,10 @@ function BookingsContent() {
         <div className="flex items-center gap-3">
           {/* Refresh button with exact styling */}
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => { setLoading(true); fetchBookings(); }}
             className="flex items-center gap-2 h-[46px] px-6 bg-dark-50 hover:bg-dark-50/80 border border-border text-subtitle-2 rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-sm cursor-pointer"
           >
-            <Icon icon="solar:restart-linear" className="w-4.5 h-4.5 text-dark-300" />
+            <Icon icon="solar:restart-linear" className={`w-4.5 h-4.5 text-dark-300 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           

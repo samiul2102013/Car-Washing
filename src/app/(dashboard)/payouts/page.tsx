@@ -135,11 +135,11 @@ export default function PayoutsPage() {
         {/* Header Action Buttons capsule style */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => {}}
+            onClick={() => { setLoading(true); loadPayouts(); }}
             className="flex items-center gap-2 h-[46px] px-6 bg-dark-50 hover:bg-dark-50/80 border border-border text-main-font rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-sm cursor-pointer"
           >
-            <Icon icon="solar:settings-linear" className="w-4.5 h-4.5 text-subtitle-2" />
-            Settings
+            <Icon icon="solar:restart-linear" className={`w-4.5 h-4.5 text-subtitle-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
           </button>
           
           <button
