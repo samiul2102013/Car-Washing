@@ -23,7 +23,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { name: 'Payouts', path: '/payouts', icon: 'solar:wad-of-money-linear' },
     { name: 'Services', path: '/services', icon: 'mingcute:heartbeat-line' },
     { name: 'Notifications', path: '/notifications', icon: 'solar:bell-linear' },
-    { name: 'Reviews', path: '/reviews', icon: 'material-symbols:mood-outline' },
     { name: 'Settings', path: '/settings', icon: 'material-symbols:settings-outline-rounded' },
   ];
 
