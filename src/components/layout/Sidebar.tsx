@@ -40,17 +40,23 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         'w-64 lg:w-20 lg:hover:w-64 group/sidebar',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
-        <div className="flex items-center gap-3.5 px-5 py-6 mb-2 shrink-0">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-orange-300 bg-white relative shrink-0">
-            <div className="w-5 h-5 rounded-full bg-orange-300 flex items-center justify-center text-[10px] text-white font-black">
-              C
-            </div>
+        <Link 
+          href="/" 
+          onClick={onClose}
+          className="flex items-center gap-3.5 px-5 py-6 mb-2 shrink-0 group/logo"
+        >
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF8A48] to-[#FF4D4D] relative shrink-0 shadow-sm transition-transform group-hover/logo:scale-105">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="8" stroke="white" strokeWidth="1.5"/>
+              <path d="M8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M12 16C12.7355 16 13.3333 15.4022 13.3333 14.6667C13.3333 13.9311 12 12 12 12C12 12 10.6667 13.9311 10.6667 14.6667C10.6667 15.4022 11.2645 16 12 16Z" fill="white"/>
+            </svg>
           </div>
-          <div className="flex items-center font-sans tracking-tight opacity-0 lg:group-hover/sidebar:opacity-100 transition-opacity duration-200 ease-in-out delay-75 pointer-events-none lg:pointer-events-auto">
+          <div className="flex items-center font-sans tracking-tight opacity-0 lg:group-hover/sidebar:opacity-100 transition-opacity duration-200 ease-in-out delay-75">
             <span className="font-extrabold text-main-font text-base">RIN</span>
             <span className="font-extrabold text-orange-300 text-base">CE</span>
           </div>
-        </div>
+        </Link>
 
         <nav className="flex-1 px-3 space-y-2 overflow-y-auto overflow-x-hidden">
           {menuItems.map((item) => {

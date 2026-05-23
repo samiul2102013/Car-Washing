@@ -61,22 +61,22 @@ export default function DashboardPage() {
     <div className="space-y-6 max-w-[1600px] mx-auto pb-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-h2 text-main-font">
+          <h1 className="text-h2 text-main-font tracking-tight leading-none">
             Dashboard
           </h1>
-          <p className="text-h4 text-subtitle mt-2">
+          <p className="text-caption1 text-dark-200 font-medium mt-2">
             Real-time insights into orders, users, and revenue.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={handleRefresh}
-            className="flex items-center gap-2 h-[46px] px-6 bg-dark-50 hover:bg-dark-50/80 border border-dark-100 text-main-font rounded-full text-xs font-bold transition-all duration-200 active:scale-[0.98] shadow-sm cursor-pointer"
+            className="flex items-center gap-2 h-[46px] px-6 bg-dark-50 hover:bg-dark-50/80 border border-border text-subtitle-2 rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-sm cursor-pointer"
           >
-            <Icon icon="solar:restart-linear" className="w-4.5 h-4.5 text-dark-200" />
+            <Icon icon="solar:restart-linear" className="w-4.5 h-4.5 text-dark-300" />
             Refresh
           </button>
-          <button className="flex items-center gap-2 h-[46px] px-6 bg-main-font hover:bg-main-font/90 text-white rounded-full text-xs font-bold transition-all duration-200 active:scale-[0.98] shadow-md cursor-pointer">
+          <button className="flex items-center gap-2 h-[46px] px-6 bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-md cursor-pointer">
             <Icon icon="solar:file-download-linear" className="w-4.5 h-4.5 text-white" />
             Export
           </button>

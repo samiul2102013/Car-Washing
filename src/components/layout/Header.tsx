@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../../providers/AuthProvider';
-import { useTheme } from '../../providers/ThemeProvider';
 import { cn } from '../../lib/utils';
 
 interface HeaderProps {
@@ -12,7 +11,6 @@ interface HeaderProps {
 
 export default function Header({ onMenuToggle }: HeaderProps) {
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const mockHeaderNotifications = [
@@ -45,20 +43,6 @@ export default function Header({ onMenuToggle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          onClick={toggleTheme}
-          className="p-2.5 rounded-full bg-white text-dark-200 hover:text-main-font shadow-sm transition-all duration-200 relative group cursor-pointer"
-          title={theme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme'}
-        >
-          <Icon
-            icon={theme === 'light' ? 'solar:moon-linear' : 'solar:sun-linear'}
-            className={cn(
-              'w-4.5 h-4.5 transition-transform duration-300 group-hover:rotate-12',
-              theme === 'light' ? 'text-indigo-500' : 'text-amber-500'
-            )}
-          />
-        </button>
-
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}

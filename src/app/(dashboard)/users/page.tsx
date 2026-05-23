@@ -184,15 +184,15 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-[1280px] mx-auto pb-8 animate-fade-in font-sans">
+    <div className="space-y-6 max-w-[1600px] mx-auto pb-8 animate-fade-in font-sans">
       
       {/* 1. Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-[28px] font-bold text-[#2D2F33] tracking-tight leading-none">
+          <h1 className="text-h2 text-main-font tracking-tight leading-none">
             Users
           </h1>
-          <p className="text-[13px] text-slate-400 font-medium mt-2">
+          <p className="text-caption1 text-dark-200 font-medium mt-2">
             Control user accounts, approvals, and activity.
           </p>
         </div>
@@ -200,14 +200,14 @@ export default function UsersPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => { setLoading(true); fetchUsers(); }}
-            className="flex items-center gap-2 h-[46px] px-6 bg-[#FAFBFD] hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-xs font-bold transition-all duration-200 active:scale-[0.98] shadow-sm cursor-pointer"
+            className="flex items-center gap-2 h-[46px] px-6 bg-dark-50 hover:bg-dark-50/80 border border-border text-subtitle-2 rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-sm cursor-pointer"
           >
-            <Icon icon="solar:restart-linear" className={`w-4.5 h-4.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+            <Icon icon="solar:restart-linear" className={`w-4.5 h-4.5 text-dark-300 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           
           <button
-            className="flex items-center gap-2 h-[46px] px-6 bg-[#2A2B2D] hover:bg-[#1E1F21] text-white rounded-full text-xs font-bold transition-all duration-200 active:scale-[0.98] shadow-md shadow-slate-800/10 cursor-pointer"
+            className="flex items-center gap-2 h-[46px] px-6 bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-md shadow-main-font/10 cursor-pointer"
           >
             <Icon icon="solar:file-download-linear" className="w-4.5 h-4.5 text-white" />
             Export
@@ -215,17 +215,17 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* 2. Controls & Tabs Capsule Bar */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white border border-slate-100/50 p-3 rounded-[28px] shadow-sm">
+      {/* 2. Controls & Tabs Bar */}
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white border border-border/50 p-4 rounded-3xl shadow-sm">
         
         {/* Tab Selection Capsule */}
-        <div className="flex bg-[#F4F5F7]/80 p-1 rounded-full border border-slate-100/40 w-fit shrink-0">
+        <div className="flex bg-dark-50/80 p-1 rounded-full border border-border/40 w-fit shrink-0">
           <button
             onClick={() => { setActiveTab('customer'); selectUser(null); }}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-bold transition-all cursor-pointer
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-caption1-bold transition-all cursor-pointer
               ${activeTab === 'customer' 
-                ? 'bg-[#FFF5EE] text-[#FF8A48] border border-[#FEF0E6] shadow-sm' 
-                : 'text-slate-450 hover:text-slate-650 bg-transparent border border-transparent'
+                ? 'bg-orange-50 text-orange-300 border border-orange-100/50 shadow-sm' 
+                : 'text-dark-300 hover:text-dark-300/80 bg-transparent border border-transparent'
               }
             `}
           >
@@ -234,10 +234,10 @@ export default function UsersPage() {
           </button>
           <button
             onClick={() => { setActiveTab('provider'); selectUser(null); }}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-bold transition-all cursor-pointer
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-caption1-bold transition-all cursor-pointer
               ${activeTab === 'provider' 
-                ? 'bg-[#FFF5EE] text-[#FF8A48] border border-[#FEF0E6] shadow-sm' 
-                : 'text-slate-450 hover:text-slate-650 bg-transparent border border-transparent'
+                ? 'bg-orange-50 text-orange-300 border border-orange-100/50 shadow-sm' 
+                : 'text-dark-300 hover:text-dark-300/80 bg-transparent border border-transparent'
               }
             `}
           >
@@ -246,10 +246,10 @@ export default function UsersPage() {
           </button>
           <button
             onClick={() => { setActiveTab('pending'); selectUser(null); }}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-bold transition-all relative cursor-pointer
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-caption1-bold transition-all relative cursor-pointer
               ${activeTab === 'pending' 
-                ? 'bg-[#FFF5EE] text-[#FF8A48] border border-[#FEF0E6] shadow-sm' 
-                : 'text-slate-450 hover:text-slate-650 bg-transparent border border-transparent'
+                ? 'bg-orange-50 text-orange-300 border border-orange-100/50 shadow-sm' 
+                : 'text-dark-300 hover:text-dark-300/80 bg-transparent border border-transparent'
               }
             `}
           >
@@ -268,25 +268,25 @@ export default function UsersPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search Task..."
-            className="w-full pl-10 pr-4 h-[46px] text-xs font-semibold rounded-full border-0 bg-[#F4F5F7]/80 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-200 transition-all duration-200"
+            className="w-full pl-10 pr-4 h-[46px] text-caption1 font-semibold rounded-full border-0 bg-dark-50/80 text-subtitle-2 placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-border transition-all duration-200"
           />
-          <Icon icon="solar:magnifer-linear" className="w-4.5 h-4.5 text-slate-450 absolute left-4 top-3.5" />
+          <Icon icon="solar:magnifer-linear" className="w-4.5 h-4.5 text-dark-300 absolute left-4 top-3.5" />
         </div>
 
       </div>
 
-      {/* 3. Table Directory Listing (Figma screenshot: compact, border-b header, no grey bg, border-slate-100) */}
-      <div className="bg-white border border-slate-100 rounded-[20px] shadow-sm overflow-hidden p-4">
+      {/* 3. Table Directory Listing */}
+      <div className="bg-white border border-border/50 rounded-3xl shadow-sm overflow-hidden p-2">
         <div className="overflow-x-auto w-full">
-          <Table className="min-w-[800px]">
+          <Table className="min-w-[900px]">
             <TableHeader>
-              <TableRow className="bg-transparent">
-                <TableHead className="pl-4 w-[280px]">Name</TableHead>
+              <TableRow className="bg-dark-50/80">
+                <TableHead className="rounded-l-2xl pl-4 w-[280px]">Name</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Orders</TableHead>
                 <TableHead className="text-right pr-12">Total Spent</TableHead>
                 <TableHead>Joined Date</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
+                <TableHead className="text-center rounded-r-2xl">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -297,26 +297,35 @@ export default function UsersPage() {
                     className="cursor-pointer"
                     onClick={() => selectUser(user.id)}
                   >
-                    {/* User Profile Column - Avatar-less compact styling */}
+                    {/* User Profile Column */}
                     <TableCell className="pl-4 w-[280px]">
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-main-font leading-normal tracking-tight group-hover:text-[#FF8A48] transition-colors">
-                          {user.name}
-                        </span>
-                        <span className="text-[11px] text-dark-200 tracking-tight leading-none mt-0.5">
-                          {user.email}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full overflow-hidden border border-border shadow-sm shrink-0">
+                          <img 
+                            src={user.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=60'} 
+                            alt={user.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-body2-bold text-main-font leading-normal tracking-tight group-hover:text-orange-300 transition-colors">
+                            {user.name}
+                          </span>
+                          <span className="text-caption1 text-dark-200 tracking-tight leading-none mt-0.5">
+                            {user.email}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
 
-                    {/* Status Column (Figma: Uppercase capsule badge with border matching color) */}
+                    {/* Status Column */}
                     <TableCell>
-                      <span className={`inline-flex items-center px-3.5 py-0.5 rounded-full text-[9px] font-black tracking-wider border uppercase
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-caption1-bold border
                         ${user.status === 'active' 
-                          ? 'bg-[#E6F4EA]/60 text-[#137333] border-[#137333]/15' 
+                          ? 'bg-emerald-50 text-emerald-500 border-emerald-100/30' 
                           : user.status === 'suspended' 
-                          ? 'bg-[#FFE6E6]/60 text-[#C5221F] border-[#C5221F]/15' 
-                          : 'bg-[#FFF9E6]/60 text-[#B06000] border-[#B06000]/15' // pending
+                          ? 'bg-red-50 text-red-500 border-red-100/30' 
+                          : 'bg-amber-50 text-amber-500 border-amber-100/30'
                         }
                       `}>
                         {user.status === 'suspended' ? 'Blocked' : user.status === 'active' ? 'Active' : 'Pending'}
@@ -324,18 +333,18 @@ export default function UsersPage() {
                     </TableCell>
 
                     {/* Orders Column */}
-                    <TableCell className="text-xs font-semibold text-dark-200">
+                    <TableCell className="text-body2 font-semibold text-dark-300">
                       {(user as any).orders ?? 14}
                     </TableCell>
 
-                    {/* Total Spent Column (Figma: € Symbol regular, balance bold, right-aligned) */}
-                    <TableCell className="text-xs text-right pr-12">
+                    {/* Total Spent Column */}
+                    <TableCell className="text-body2 text-right pr-12">
                       <span className="text-dark-200 font-normal mr-1.5">€</span>
                       <span className="text-main-font font-extrabold">{(user as any).totalSpent ?? 250}</span>
                     </TableCell>
 
                     {/* Joined Date Column */}
-                    <TableCell className="text-xs font-semibold text-dark-200">
+                    <TableCell className="text-body2 font-semibold text-dark-300">
                       {new Date(user.createdAt).toLocaleDateString('en-GB')}
                     </TableCell>
 
@@ -346,7 +355,7 @@ export default function UsersPage() {
                           e.stopPropagation();
                           selectUser(user.id);
                         }}
-                        className="p-1.5 bg-[#FAFBFD] hover:bg-[#E9EBEF] text-[#5C5F66] rounded-[6px] border border-slate-200/60 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
+                        className="p-1.5 bg-dark-50 hover:bg-dark-100 text-dark-300 rounded-lg border border-border transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
                       >
                         <Icon icon="solar:eye-linear" className="w-4 h-4" />
                       </button>
@@ -355,7 +364,7 @@ export default function UsersPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-dark-200 font-semibold text-xs">
+                  <TableCell colSpan={6} className="py-8 text-center text-dark-200 font-semibold text-body2">
                     No users matching search filters.
                   </TableCell>
                 </TableRow>

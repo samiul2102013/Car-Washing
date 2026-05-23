@@ -77,7 +77,7 @@ export default function ServicesPage() {
   });
 
   return (
-    <div className="space-y-8 w-full pb-12 animate-fade-in font-sans">
+    <div className="space-y-6 max-w-[1600px] mx-auto pb-12 animate-fade-in font-sans">
       
       {/* 1. Header with exact SVG titles and custom w-[307px]/[308px] buttons */}
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">

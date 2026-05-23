@@ -101,7 +101,7 @@ export default function EarningsPage() {
   ];
 
   return (
-    <div className="space-y-5 w-full pb-8 animate-fade-in font-sans">
+    <div className="space-y-6 max-w-[1600px] mx-auto pb-8 animate-fade-in font-sans">
       
       {/* 1. Header Row (Figma Style: text-[40px] title, text-[28px] subtitle) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
