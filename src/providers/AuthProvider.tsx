@@ -3,13 +3,14 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ADMIN_PROFILE } from '../constants/mockData';
+import { tokenStorage, setAuthFailureHandler, ApiError } from '../services/api';
+import { authService } from '../services/auth/service';
 
 interface AuthUser {
   name: string;
   email: string;
   role: 'admin';
-  avatarUrl: string;
+  avatarUrl?: string;
 }
 
 interface AuthContextType {
@@ -20,6 +21,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
 }
 
+const SESSION_KEY = 'carwash_admin_session';
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -28,42 +31,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user session exists in localStorage
-    const savedSession = localStorage.getItem('carwash_admin_session');
-    if (savedSession) {
-      try {
-        setUser(JSON.parse(savedSession));
-      } catch {
-        localStorage.removeItem('carwash_admin_session');
+    setAuthFailureHandler(() => {
+      setUser(null);
+      router.push('/auth/login');
+    });
+  }, [router]);
+
+  useEffect(() => {
+    if (tokenStorage.getAccess()) {
+      const savedSession = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) : null;
+      if (savedSession) {
+        try {
+          setUser(JSON.parse(savedSession));
+        } catch {
+          tokenStorage.clear();
+        }
       }
-    } else {
-      // By default, pre-populate Sarah Jessie to make testing smooth
-      localStorage.setItem('carwash_admin_session', JSON.stringify(ADMIN_PROFILE));
-      setUser(ADMIN_PROFILE);
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    // Simulate real auth call
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const result = await authService.login(email, password);
+      if (!result) return false;
 
-    // Simple mock check
-    if (email.toLowerCase() === ADMIN_PROFILE.email.toLowerCase() && password === 'admin123') {
-      const sessionUser = { ...ADMIN_PROFILE };
-      localStorage.setItem('carwash_admin_session', JSON.stringify(sessionUser));
-      setUser(sessionUser);
-      setIsLoading(false);
+      tokenStorage.set(result.tokens.access, result.tokens.refresh);
+      localStorage.setItem(SESSION_KEY, JSON.stringify(result.user));
+      setUser(result.user);
       return true;
+    } catch (err) {
+      if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+        return false;
+      }
+      console.error('Login failed:', err);
+      return false;
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-    return false;
   };
 
   const logout = () => {
-    localStorage.removeItem('carwash_admin_session');
+    authService.logout(tokenStorage.getRefresh());
+    tokenStorage.clear();
     setUser(null);
     router.push('/auth/login');
   };

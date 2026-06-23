@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { bookingService } from '../../../services';
-import { Booking, BookingStatus } from '../../../types';
+import { Booking } from '../../../types';
 import MapView from '../../../components/features/MapView';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/table';
 
@@ -15,147 +15,21 @@ function BookingsContent() {
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
-
-  // Exact high-fidelity default listings matching the screenshots
-  const defaultBookings: Booking[] = [
-    {
-      id: '#1278',
-      customerName: 'Marc Wilson',
-      customerPhone: '+1 (555) 019-2834',
-      providerName: 'Jack',
-      serviceName: 'Express Wash',
-      serviceCategory: 'Premium',
-      carType: 'Sedan (Tesla Model 3)',
-      dirtLevel: 'Light',
-      address: 'Main St, San Francisco',
-      status: 'active',
-      date: 'Oct 27, 2026',
-      timeSlot: '08:30 AM',
-      totalAmount: 250,
-      notes: 'Please pay extra attention to the alloy wheels and interior vacuums.',
-      createdAt: '2026-05-18T00:00:00Z',
-      coordinates: { lat: 37.7749, lng: -122.4194 },
-      providerCoordinates: { lat: 37.7849, lng: -122.4354 },
-      routePath: [
-        { lat: 37.7849, lng: -122.4354 },
-        { lat: 37.7800, lng: -122.4250 },
-        { lat: 37.7749, lng: -122.4194 }
-      ]
-    },
-    {
-      id: '#1279',
-      customerName: 'Marc Wilson',
-      customerPhone: '+1 (555) 019-2834',
-      providerName: 'Jack',
-      serviceName: 'Express Wash',
-      serviceCategory: 'Premium',
-      carType: 'Sedan (Tesla Model 3)',
-      dirtLevel: 'Light',
-      address: 'Main St, San Francisco',
-      status: 'active',
-      date: 'Oct 27, 2026',
-      timeSlot: '09:45 AM',
-      totalAmount: 250,
-      notes: 'Eco Discount applies. Focus on clean windows.',
-      createdAt: '2026-05-18T00:00:00Z',
-      coordinates: { lat: 37.7549, lng: -122.4094 },
-      providerCoordinates: { lat: 37.7649, lng: -122.4254 },
-      routePath: [
-        { lat: 37.7649, lng: -122.4254 },
-        { lat: 37.7600, lng: -122.4150 },
-        { lat: 37.7549, lng: -122.4094 }
-      ]
-    },
-    {
-      id: '#1280',
-      customerName: 'Marc Wilson',
-      customerPhone: '+1 (555) 019-2834',
-      providerName: 'Jack',
-      serviceName: 'Express Wash',
-      serviceCategory: 'Premium',
-      carType: 'Sedan (Tesla Model 3)',
-      dirtLevel: 'Light',
-      address: 'Main St, San Francisco',
-      status: 'pending',
-      date: 'Oct 27, 2026',
-      timeSlot: '11:15 AM',
-      totalAmount: 250,
-      notes: 'Heavy mud surcharge verified.',
-      createdAt: '2026-05-18T00:00:00Z',
-      coordinates: { lat: 37.7949, lng: -122.4394 },
-      providerCoordinates: { lat: 37.8049, lng: -122.4494 },
-      routePath: [
-        { lat: 37.8049, lng: -122.4494 },
-        { lat: 37.8000, lng: -122.4430 },
-        { lat: 37.7949, lng: -122.4394 }
-      ]
-    },
-    {
-      id: '#1281',
-      customerName: 'Marc Wilson',
-      customerPhone: '+1 (555) 019-2834',
-      providerName: 'Jack',
-      serviceName: 'Express Wash',
-      serviceCategory: 'Premium',
-      carType: 'Sedan (Tesla Model 3)',
-      dirtLevel: 'Light',
-      address: 'Main St, San Francisco',
-      status: 'active',
-      date: 'Oct 27, 2026',
-      timeSlot: '01:30 PM',
-      totalAmount: 250,
-      notes: 'Polishing finish requested.',
-      createdAt: '2026-05-18T00:00:00Z',
-      coordinates: { lat: 37.7649, lng: -122.4294 },
-      providerCoordinates: { lat: 37.7749, lng: -122.4394 },
-      routePath: [
-        { lat: 37.7749, lng: -122.4394 },
-        { lat: 37.7700, lng: -122.4330 },
-        { lat: 37.7649, lng: -122.4294 }
-      ]
-    },
-    {
-      id: '#1282',
-      customerName: 'Marc Wilson',
-      customerPhone: '+1 (555) 019-2834',
-      providerName: 'Jack',
-      serviceName: 'Express Wash',
-      serviceCategory: 'Premium',
-      carType: 'Sedan (Tesla Model 3)',
-      dirtLevel: 'Light',
-      address: 'Main St, San Francisco',
-      status: 'active',
-      date: 'Oct 27, 2026',
-      timeSlot: '03:00 PM',
-      totalAmount: 250,
-      notes: 'Thorough trunk cleanup needed.',
-      createdAt: '2026-05-18T00:00:00Z',
-      coordinates: { lat: 37.7849, lng: -122.4494 },
-      providerCoordinates: { lat: 37.7949, lng: -122.4594 },
-      routePath: [
-        { lat: 37.7949, lng: -122.4594 },
-        { lat: 37.7900, lng: -122.4530 },
-        { lat: 37.7849, lng: -122.4494 }
-      ]
-    }
-  ];
+  const [selectedBookingDetail, setSelectedBookingDetail] = useState<Booking | null>(null);
 
   // Load Bookings
   const fetchBookings = async () => {
     try {
       const data = await bookingService.getBookings();
-      if (data && data.length > 0) {
-        setBookings(data);
-      } else {
-        setBookings(defaultBookings);
-      }
+      setBookings(data);
     } catch (err) {
-      console.error('Failed to load bookings, using mock default dataset:', err);
-      setBookings(defaultBookings);
+      console.error('Failed to load bookings:', err);
+      setBookings([]);
     } finally {
       setLoading(false);
     }
@@ -172,34 +46,31 @@ function BookingsContent() {
     }
   }, [urlId]);
 
-  // Handle status update
-  const handleUpdateStatus = async (id: string, nextStatus: BookingStatus) => {
-    try {
-      setLoading(true);
-      await bookingService.updateBookingStatus(id, nextStatus);
-      await fetchBookings();
-    } catch (err) {
-      console.error('Failed to update booking status:', err);
-      // Fallback update on local state to simulate dynamic mock client actions
-      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: nextStatus } : b));
-    } finally {
-      setLoading(false);
+  // Fetch full detail when a booking is selected
+  useEffect(() => {
+    if (!selectedBookingId) {
+      setSelectedBookingDetail(null);
+      return;
     }
-  };
+    setDetailLoading(true);
+    bookingService.getBookingById(selectedBookingId).then((detail) => {
+      if (detail) setSelectedBookingDetail(detail);
+    }).catch(() => {}).finally(() => setDetailLoading(false));
+  }, [selectedBookingId]);
 
   // Filter Bookings
   const filteredBookings = bookings.filter((booking) => {
     const matchesSearch = 
-      booking.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (booking.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       booking.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.address.toLowerCase().includes(searchQuery.toLowerCase());
+      (booking.address || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
-  const selectedBooking = bookings.find((b) => b.id === selectedBookingId);
+  const selectedBooking = selectedBookingDetail ?? bookings.find((b) => b.id === selectedBookingId);
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto pb-8 animate-fade-in font-sans">
@@ -289,7 +160,7 @@ function BookingsContent() {
             
             <div className="bg-white border border-border/50 p-6 rounded-3xl shadow-sm flex flex-col justify-between font-sans">
               <div className="space-y-6">
-                
+
                 <div className="flex items-center gap-4 pb-4 border-b border-border">
                   <button
                     onClick={() => setSelectedBookingId(null)}
@@ -307,32 +178,27 @@ function BookingsContent() {
                   </div>
                 </div>
 
-                {/* Stock Image Detail with Blue Tag */}
+                {/* Photo/Image */}
                 <div className="relative h-40 rounded-2xl overflow-hidden shadow-inner">
-                  <img 
-                    src="https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=600&auto=format&fit=crop&q=80" 
-                    alt="Interior car wash detail" 
+                  <img
+                    src={selectedBooking.photos?.[0]?.image || 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=600&auto=format&fit=crop&q=80'}
+                    alt="Booking"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent" />
-                  
-                  {/* Floating blue tag from mockup */}
-                  <div className="absolute top-3 left-3 bg-[#0091FF] text-white text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                    <Icon icon="solar:link-linear" className="w-2.5 h-2.5" />
-                    <span>pexels-wavyvisuals-377312923...</span>
-                  </div>
                 </div>
 
+                {/* Customer + Provider row with real avatars */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-dark-50 hover:bg-dark-50/80 rounded-full p-1.5 flex items-center justify-between w-full border border-border/50 transition-colors cursor-pointer">
                     <div className="flex items-center min-w-0">
-                      <img 
-                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=60" 
-                        alt="Customer Avatar"
+                      <img
+                        src={selectedBooking.customerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=60'}
+                        alt="Customer"
                         className="w-7 h-7 rounded-full object-cover border border-white shrink-0"
                       />
                       <span className="text-caption1-bold text-main-font ml-2 truncate">
-                        {selectedBooking.customerName === 'Marc Wilson' ? 'Azhar Uddin' : selectedBooking.customerName}
+                        {selectedBooking.customerName}
                       </span>
                     </div>
                     <Icon icon="solar:alt-arrow-right-linear" className="w-3.5 h-3.5 text-dark-200 shrink-0 mr-1" />
@@ -340,63 +206,94 @@ function BookingsContent() {
 
                   <div className="bg-dark-50 hover:bg-dark-50/80 rounded-full p-1.5 flex items-center justify-between w-full border border-border/50 transition-colors cursor-pointer">
                     <div className="flex items-center min-w-0">
-                      <img 
-                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=60" 
-                        alt="Provider Avatar"
+                      <img
+                        src={selectedBooking.providerAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=60'}
+                        alt="Provider"
                         className="w-7 h-7 rounded-full object-cover border border-white shrink-0"
                       />
                       <span className="text-caption1-bold text-main-font ml-2 truncate">
-                        {selectedBooking.providerName === 'Jack' ? "John's Auto Shine" : selectedBooking.providerName}
+                        {selectedBooking.providerName || '—'}
                       </span>
                     </div>
                     <Icon icon="solar:alt-arrow-right-linear" className="w-3.5 h-3.5 text-dark-200 shrink-0 mr-1" />
                   </div>
                 </div>
 
+                {/* Service + Location + Date */}
                 <div className="bg-dark-50 border border-border/30 p-4 rounded-3xl space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-body2-bold text-main-font">
-                      {selectedBooking.serviceName === 'Express Wash' ? 'Premium Wash' : selectedBooking.serviceName}
-                    </span>
-                    <span className="text-body2-bold text-main-font">
-                      <span className="text-orange-300 mr-0.5">€</span>250
+                    <div>
+                      <span className="text-body2-bold text-main-font block">
+                        {selectedBooking.serviceName}
+                      </span>
+                      {selectedBooking.serviceDescription && (
+                        <span className="text-caption1 text-dark-200 font-medium">
+                          {selectedBooking.serviceDescription}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-body2-bold text-main-font shrink-0 ml-4">
+                      <span className="text-orange-300 mr-0.5">€</span>{selectedBooking.totalAmount.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-caption1 text-dark-300 font-medium leading-normal">
                     <Icon icon="solar:map-point-linear" className="w-4 h-4 text-dark-200 shrink-0" />
-                    <span>{selectedBooking.address === 'Main St, San Francisco' ? 'House 12, Road 4, Dhaka' : selectedBooking.address}</span>
+                    <span>{selectedBooking.address || '—'}{selectedBooking.city ? `, ${selectedBooking.city}` : ''}</span>
                   </div>
                   <div className="flex items-center gap-2 text-caption1 text-dark-300 font-medium leading-normal">
                     <Icon icon="solar:calendar-linear" className="w-4 h-4 text-dark-200 shrink-0" />
-                    <span>{selectedBooking.date === 'Oct 27, 2026' ? 'Oct 27, 8:30 AM' : `${selectedBooking.date}, ${selectedBooking.timeSlot}`}</span>
+                    <span>{selectedBooking.date}{selectedBooking.timeSlot ? `, ${selectedBooking.timeSlot}` : ''}</span>
                   </div>
                 </div>
 
+                {/* Price breakdown from real API data */}
                 <div className="bg-dark-50 border border-border/30 p-4 rounded-3xl space-y-3">
-                  <div className="flex justify-between text-caption1 text-dark-300 font-medium">
-                    <span>Package (Standard)</span>
-                    <span className="font-bold text-subtitle-2">€ 39</span>
-                  </div>
-                  <div className="flex justify-between text-caption1 text-dark-300 font-medium">
-                    <span>Vehicle (Sedan)</span>
-                    <span className="font-bold text-subtitle-2">€ 20</span>
-                  </div>
-                  <div className="flex justify-between text-caption1 text-dark-300 font-medium">
-                    <span>Dirt Level (Light)</span>
-                    <span className="font-bold text-subtitle-2">€ 10</span>
-                  </div>
-                  <div className="flex justify-between text-caption1 text-dark-300 font-medium">
-                    <span>Distance (3.2 km)</span>
-                    <span className="font-bold text-subtitle-2">€ 10</span>
-                  </div>
-                  <div className="flex justify-between text-caption1 text-dark-300 font-medium">
-                    <span>Platform Fee</span>
-                    <span className="font-bold text-subtitle-2">€ 10</span>
-                  </div>
+                  {selectedBooking.servicePrice != null && (
+                    <div className="flex justify-between text-caption1 text-dark-300 font-medium">
+                      <span>Service ({selectedBooking.serviceName})</span>
+                      <span className="font-bold text-subtitle-2">€ {selectedBooking.servicePrice.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedBooking.vehiclePrice != null && Number(selectedBooking.vehiclePrice) > 0 && (
+                    <div className="flex justify-between text-caption1 text-dark-300 font-medium">
+                      <span>Vehicle{selectedBooking.carType ? ` (${selectedBooking.carType})` : ''}</span>
+                      <span className="font-bold text-subtitle-2">€ {selectedBooking.vehiclePrice.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedBooking.dirtPrice != null && (
+                    <div className="flex justify-between text-caption1 text-dark-300 font-medium">
+                      <span>Dirt Level ({selectedBooking.dirtLevel})</span>
+                      <span className="font-bold text-subtitle-2">€ {selectedBooking.dirtPrice.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedBooking.distancePrice != null && Number(selectedBooking.distancePrice) > 0 && (
+                    <div className="flex justify-between text-caption1 text-dark-300 font-medium">
+                      <span>Distance{selectedBooking.distanceKm ? ` (${selectedBooking.distanceKm.toFixed(1)} km)` : ''}</span>
+                      <span className="font-bold text-subtitle-2">€ {selectedBooking.distancePrice.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedBooking.engineDiscount != null && Number(selectedBooking.engineDiscount) > 0 && (
+                    <div className="flex justify-between text-caption1 text-dark-300 font-medium">
+                      <span>Engine Discount</span>
+                      <span className="font-bold text-subtitle-2 text-emerald-500">-€ {selectedBooking.engineDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedBooking.platformFee != null && (
+                    <div className="flex justify-between text-caption1 text-dark-300 font-medium">
+                      <span>Platform Fee</span>
+                      <span className="font-bold text-subtitle-2">€ {selectedBooking.platformFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedBooking.tipAmount != null && Number(selectedBooking.tipAmount) > 0 && (
+                    <div className="flex justify-between text-caption1 text-dark-300 font-medium">
+                      <span>Tip</span>
+                      <span className="font-bold text-subtitle-2">€ {selectedBooking.tipAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="border-t border-border/60 pt-3 flex justify-between items-center">
                     <span className="text-caption1-bold text-main-font">Total Amount</span>
                     <span className="text-caption1-bold text-main-font">
-                      <span className="text-orange-300 mr-0.5">€</span>35.50
+                      <span className="text-orange-300 mr-0.5">€</span>{selectedBooking.totalAmount.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -496,18 +393,20 @@ function BookingsContent() {
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-caption1-bold border
                             ${booking.status === 'completed' 
                               ? 'bg-emerald-50 text-emerald-500 border-emerald-100/30' 
+                              : booking.status === 'active' 
+                              ? 'bg-blue-50 text-blue-500 border-blue-100/30' 
                               : booking.status === 'pending' 
                               ? 'bg-amber-50 text-amber-500 border-amber-100/30' 
-                              : 'bg-orange-50 text-orange-300 border-orange-100/30'
+                              : 'bg-rose-50 text-rose-500 border-rose-100/30'
                             }
                           `}>
-                            {booking.status === 'pending' ? 'In Progress' : 'En Route'}
+                            {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                           </span>
                         </TableCell>
 
                         <TableCell>
                           <span className="text-orange-300 font-bold mr-0.5">€</span>
-                          <span className="text-main-font font-extrabold">{booking.totalAmount}</span>
+                          <span className="text-main-font font-extrabold">{booking.totalAmount.toFixed(2)}</span>
                         </TableCell>
 
                         <TableCell className="text-center">

@@ -9,16 +9,11 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 export default function PayoutsPage() {
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'Paid' | 'Pending' | 'Failed'>('all');
   const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Fetch / fallback mock data representing the screenshot perfectly
   const loadPayouts = async () => {
     try {
       const data = await payoutService.getPayouts();
@@ -31,92 +26,33 @@ export default function PayoutsPage() {
   };
 
   useEffect(() => {
-    if (mounted) {
-      loadPayouts();
-    }
-  }, [mounted]);
+    loadPayouts();
+  }, []);
 
-  // High-fidelity mock payouts exactly matching the screenshot
-  const figmaPayouts = [
-    {
-      id: 'RBC-127',
-      providerName: 'Marc Wilson',
-      providerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      providerEmail: 'example@gmail.com',
-      grossAmount: 250,
-      commission: 250,
-      netPaid: 250,
-      status: 'Paid' as PayoutStatus,
-      bankName: 'Bank Transfer (*** 4421)',
-      accountNumber: '4421',
-      date: '2026-10-23'
-    },
-    {
-      id: 'RBC-128',
-      providerName: 'Marc Wilson',
-      providerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      providerEmail: 'example@gmail.com',
-      grossAmount: 250,
-      commission: 250,
-      netPaid: 250,
-      status: 'Failed' as PayoutStatus,
-      bankName: 'Bank Transfer (*** 4421)',
-      accountNumber: '4421',
-      date: '2026-10-23'
-    },
-    {
-      id: 'RBC-129',
-      providerName: 'Marc Wilson',
-      providerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      providerEmail: 'example@gmail.com',
-      grossAmount: 250,
-      commission: 250,
-      netPaid: 250,
-      status: 'Paid' as PayoutStatus,
-      bankName: 'Bank Transfer (*** 4421)',
-      accountNumber: '4421',
-      date: '2026-10-23'
-    },
-    {
-      id: 'RBC-130',
-      providerName: 'Marc Wilson',
-      providerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      providerEmail: 'example@gmail.com',
-      grossAmount: 250,
-      commission: 250,
-      netPaid: 250,
-      status: 'Paid' as PayoutStatus,
-      bankName: 'Bank Transfer (*** 4421)',
-      accountNumber: '4421',
-      date: '2026-10-23'
-    },
-    {
-      id: 'RBC-131',
-      providerName: 'Marc Wilson',
-      providerAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      providerEmail: 'example@gmail.com',
-      grossAmount: 250,
-      commission: 250,
-      netPaid: 250,
-      status: 'Failed' as PayoutStatus,
-      bankName: 'Bank Transfer (*** 4421)',
-      accountNumber: '4421',
-      date: '2026-10-23'
+  const handleRetry = async (id: string) => {
+    setRetryingId(id);
+    try {
+      await payoutService.retryPayout(id);
+      await loadPayouts();
+    } catch (err) {
+      console.error('Failed to retry payout:', err);
+    } finally {
+      setRetryingId(null);
     }
-  ];
+  };
 
-  if (!mounted || loading) {
+  if (loading) {
     return <PayoutsSkeleton />;
   }
 
   // Filter logic
-  const displayPayouts = figmaPayouts.filter(p => {
+  const displayPayouts = payouts.filter(p => {
     const matchesSearch = p.providerName.toLowerCase().includes(searchQuery.toLowerCase()) || p.id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab = activeTab === 'all' || p.status === activeTab;
     return matchesSearch && matchesTab;
   });
 
-  const selectedPayout = figmaPayouts.find(p => p.id === selectedPayoutId) || figmaPayouts[0];
+  const selectedPayout = payouts.find(p => p.id === selectedPayoutId) || payouts[0];
 
   return (
     <div className="space-y-6 w-full pb-8 animate-fade-in font-sans">
@@ -223,7 +159,7 @@ export default function PayoutsPage() {
                     <div className="flex items-center gap-3">
                       <div className="w-[42px] h-[42px] rounded-full overflow-hidden border border-border shadow-sm shrink-0">
                         <img 
-                          src={payout.providerAvatar} 
+                          src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150" 
                           alt={payout.providerName} 
                           className="w-full h-full object-cover"
                         />
@@ -233,23 +169,23 @@ export default function PayoutsPage() {
                           {payout.providerName}
                         </span>
                         <span className="text-[9.5px] text-dark-200 tracking-tight leading-none mt-0.5">
-                          {payout.providerEmail}
+                          {payout.id}
                         </span>
                       </div>
                     </div>
                   </TableCell>
 
                   <TableCell className="text-dark-200 font-bold">
-                    €{payout.grossAmount}
+                    €{payout.amount}
                   </TableCell>
 
                   <TableCell className="font-bold text-[#FF5B5B]">
-                    - €{payout.commission}
+                    - €{Math.round(payout.amount * 0.2)}
                   </TableCell>
 
                   <TableCell>
                     <span className="text-orange-300 font-bold mr-1">€</span>
-                    <span className="text-main-font font-black">{payout.netPaid}</span>
+                    <span className="text-main-font font-black">{payout.amount}</span>
                   </TableCell>
 
                   <TableCell>
@@ -264,23 +200,28 @@ export default function PayoutsPage() {
                   </TableCell>
 
                   <TableCell className="text-center">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedPayoutId(payout.id);
-                      }}
-                      className={`p-2 rounded-lg border transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95
-                        ${payout.status === 'Paid'
-                          ? 'bg-dark-50 hover:bg-dark-50/80 text-subtitle-2 border-border/60'
-                          : 'bg-rose-50 hover:bg-rose-50/80 text-rose-500 border-rose-200/50'
-                        }
-                      `}
-                    >
-                      <Icon 
-                        icon={payout.status === 'Paid' ? 'solar:document-linear' : 'solar:restart-linear'} 
-                        className="w-4.5 h-4.5" 
-                      />
-                    </button>
+                    {payout.status === 'Failed' ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRetry(payout.id);
+                        }}
+                        disabled={retryingId === payout.id}
+                        className="p-2 rounded-lg border transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95 bg-rose-50 hover:bg-rose-50/80 text-rose-500 border-rose-200/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <Icon icon="solar:restart-linear" className={`w-4.5 h-4.5 ${retryingId === payout.id ? 'animate-spin' : ''}`} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPayoutId(payout.id);
+                        }}
+                        className="p-2 rounded-lg border transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95 bg-dark-50 hover:bg-dark-50/80 text-subtitle-2 border-border/60"
+                      >
+                        <Icon icon="solar:document-linear" className="w-4.5 h-4.5" />
+                      </button>
+                    )}
                   </TableCell>
 
                 </TableRow>

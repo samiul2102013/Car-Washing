@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { serviceConfigService } from '../../../../services';
 
 export default function CreateServicePage() {
-  const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+  const [sending, setSending] = useState(false);
 
   // Input states
-  const [engineType, setEngineType] = useState<'Petrol' | 'Electric'>('Electric');
-  const [serviceName, setServiceName] = useState('Standard Wash');
-  const [basePrice, setBasePrice] = useState('€ 39');
-  const [description, setDescription] = useState('Standard Wash');
+  const [serviceName, setServiceName] = useState('');
+  const [basePrice, setBasePrice] = useState('');
+  const [description, setDescription] = useState('');
 
   // Dirt Level Config
   const [dirtLight, setDirtLight] = useState('Light');
@@ -25,16 +27,27 @@ export default function CreateServicePage() {
   const [feeType, setFeeType] = useState<'Percentage' | 'Fixed'>('Percentage');
   const [feeAmount, setFeeAmount] = useState('€ 39');
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <CreateServiceSkeleton />;
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const price = parseFloat(basePrice.replace(/[^0-9.]/g, '')) || 0;
+    if (!serviceName || !price) return;
+    try {
+      setSending(true);
+      await serviceConfigService.addService({
+        name: serviceName,
+        description,
+        basePrice: price,
+        isActive: true,
+      });
+      router.push('/services');
+    } catch (err) {
+      console.error('Failed to create service:', err);
+      setSending(false);
+    }
+  };
 
   return (
-    <div className="space-y-8 w-full pb-12 animate-fade-in font-sans">
+    <form onSubmit={handleSubmit} className="space-y-8 w-full pb-12 animate-fade-in font-sans">
       
       {/* 1. Header with Circular Back Button */}
       <div className="flex items-center gap-4">
@@ -78,26 +91,6 @@ export default function CreateServicePage() {
           </div>
         </div>
 
-        {/* Engine Type dropdown input (exactly pill shaped and high fidelity) */}
-        <div className="space-y-2">
-          <span className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
-            Engine Type
-          </span>
-          <div className="relative">
-            <select
-              value={engineType}
-              onChange={(e) => setEngineType(e.target.value as 'Petrol' | 'Electric')}
-              className="w-full h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all appearance-none cursor-pointer"
-            >
-              <option value="Electric">Electric</option>
-              <option value="Petrol">Petrol</option>
-            </select>
-            <div className="absolute inset-y-0 right-6 flex items-center pointer-events-none text-dark-300">
-              <Icon icon="solar:alt-arrow-down-linear" className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
         {/* Service Name & Base Price row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
@@ -108,6 +101,7 @@ export default function CreateServicePage() {
               type="text"
               value={serviceName}
               onChange={(e) => setServiceName(e.target.value)}
+              required
               className="w-full h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
             />
           </div>
@@ -120,12 +114,13 @@ export default function CreateServicePage() {
               type="text"
               value={basePrice}
               onChange={(e) => setBasePrice(e.target.value)}
+              required
               className="w-full h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
             />
           </div>
         </div>
 
-        {/* Description textbox (Satoshi exact typography) */}
+        {/* Description textbox */}
         <div className="space-y-2">
           <label className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
             Description
@@ -139,7 +134,7 @@ export default function CreateServicePage() {
         </div>
       </div>
 
-      {/* 3. Bottom Columns (Dirt Level Config & Platform Fee) */}
+      {/* 3. Bottom Columns (Dirt Level Config & Platform Fee) - UI only, not sent to API yet */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Dirt Level Configuration Card */}
@@ -155,7 +150,6 @@ export default function CreateServicePage() {
               <div className="pl-2">Additional Price</div>
             </div>
 
-            {/* Inputs list matching exactly Screenshot 1 */}
             <div className="space-y-4">
               {/* Row 1: Light */}
               <div className="grid grid-cols-2 gap-4">
@@ -216,9 +210,9 @@ export default function CreateServicePage() {
             </h3>
           </div>
 
-          {/* Toggle Tabs container matching exactly Percentage vs Fixed */}
           <div className="bg-dark-50/60 rounded-full h-[59px] flex items-center p-1.5 w-full select-none">
             <button
+              type="button"
               onClick={() => setFeeType('Percentage')}
               className={`flex-1 h-full flex items-center justify-center rounded-full text-xs font-bold transition-all cursor-pointer
                 ${feeType === 'Percentage'
@@ -230,6 +224,7 @@ export default function CreateServicePage() {
               Percentage (%)
             </button>
             <button
+              type="button"
               onClick={() => setFeeType('Fixed')}
               className={`flex-1 h-full flex items-center justify-center rounded-full text-xs font-bold transition-all cursor-pointer
                 ${feeType === 'Fixed'
@@ -242,7 +237,6 @@ export default function CreateServicePage() {
             </button>
           </div>
 
-          {/* Fee amount field input */}
           <div className="space-y-2">
             <label className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
               Fee Amount (€)
@@ -261,7 +255,7 @@ export default function CreateServicePage() {
 
       </div>
 
-      {/* 4. Action Buttons Row (Draft vs Publish) */}
+      {/* 4. Action Buttons Row */}
       <div className="flex flex-col sm:flex-row justify-end pt-4 gap-4 w-full">
         <Link
           href="/services"
@@ -269,27 +263,18 @@ export default function CreateServicePage() {
         >
           Save as Draft
         </Link>
-        <Link
-          href="/services"
-          className="flex items-center justify-center w-full sm:w-1/2 lg:w-[280px] h-[59px] bg-main-font hover:bg-main-font/90 text-white rounded-full text-sm font-bold transition-all shadow-md cursor-pointer active:scale-95 text-center gap-2"
+        <button
+          type="submit"
+          disabled={sending}
+          className="flex items-center justify-center w-full sm:w-1/2 lg:w-[280px] h-[59px] bg-main-font hover:bg-main-font/90 text-white rounded-full text-sm font-bold transition-all shadow-md cursor-pointer active:scale-95 text-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <Icon icon="solar:folder-check-linear" className="w-5 h-5 text-white" />
-          Save & Publish
-        </Link>
+          {sending ? 'Creating...' : 'Save & Publish'}
+        </button>
       </div>
 
-    </div>
+    </form>
   );
 }
 
-function CreateServiceSkeleton() {
-  return (
-    <div className="space-y-6 animate-pulse w-full pb-8">
-      <div className="space-y-2">
-        <div className="h-6 w-48 bg-dark-50 rounded-lg"></div>
-        <div className="h-3 w-64 bg-dark-50 rounded-lg"></div>
-      </div>
-      <div className="h-96 w-full bg-dark-50 rounded-2xl"></div>
-    </div>
-  );
-}
+

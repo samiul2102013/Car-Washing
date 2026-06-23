@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../../../providers/AuthProvider';
 import { Button } from '../../../components/ui/button';
@@ -37,7 +36,8 @@ export default function LoginPage() {
       } else {
         setError('Invalid admin credentials. Please try again.');
       }
-    } catch {
+    } catch (err) {
+      console.error('[login page] login() threw:', err);
       setError('Authentication failed. Please check your connection.');
     } finally {
       setLoading(false);
@@ -97,14 +97,6 @@ export default function LoginPage() {
             iconPosition="right"
             required
           />
-          <div className="flex justify-end mt-2">
-            <Link
-              href="/auth/forgot-password"
-              className="text-xs font-semibold text-orange-300 hover:text-orange-600 transition-colors"
-            >
-              Forgot password?
-            </Link>
-          </div>
         </div>
 
         <Button
@@ -122,16 +114,6 @@ export default function LoginPage() {
           )}
         </Button>
       </form>
-
-      <div className="mt-8 p-4 rounded-2xl bg-orange-50 border border-orange-100/40">
-        <span className="text-[10px] font-black text-orange-300 uppercase tracking-widest block mb-1">
-          Quick Test Access:
-        </span>
-        <div className="space-y-1 text-subtitle text-xs font-semibold">
-          <p>Email: <span className="text-main-font font-mono select-all">sarah.jessie@carwash.com</span></p>
-          <p>Password: <span className="text-main-font font-mono select-all">admin123</span></p>
-        </div>
-      </div>
     </AuthLayout>
   );
 }

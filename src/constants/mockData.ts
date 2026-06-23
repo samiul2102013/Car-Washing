@@ -21,36 +21,28 @@ export const MOCK_SERVICES: Service[] = [
     id: 's1',
     name: 'Eco Wash',
     basePrice: 35,
-    durationMinutes: 30,
     description: 'Eco-friendly exterior hand wash, tire shine, and outer glass cleaning.',
-    category: 'exterior',
     isActive: true,
   },
   {
     id: 's2',
     name: 'Interior Deep Clean',
     basePrice: 65,
-    durationMinutes: 60,
     description: 'Full vacuum, steam sterilization of seats, leather treatment, dashboard dusting, and inner window polish.',
-    category: 'interior',
     isActive: true,
   },
   {
     id: 's3',
     name: 'Full Service Wash',
     basePrice: 90,
-    durationMinutes: 90,
     description: 'Combines Eco Wash and Interior Deep Clean with premium wax coat and trunk cleaning.',
-    category: 'full-service',
     isActive: true,
   },
   {
     id: 's4',
     name: 'Showroom Detailing',
     basePrice: 160,
-    durationMinutes: 150,
     description: 'Professional paint clay-bar treatment, high-gloss machine polish, paint sealant, and deep wheel-well restoration.',
-    category: 'detailing',
     isActive: true,
   },
 ];
@@ -356,12 +348,12 @@ export const MOCK_PAYOUTS: Payout[] = [
 ];
 
 export const MOCK_EARNINGS_STATS: EarningStats[] = [
-  { month: 'Dec', revenue: 4200, earnings: 630 },
-  { month: 'Jan', revenue: 5100, earnings: 765 },
-  { month: 'Feb', revenue: 4900, earnings: 735 },
-  { month: 'Mar', revenue: 6800, earnings: 1020 },
-  { month: 'Apr', revenue: 7200, earnings: 1080 },
-  { month: 'May', revenue: 9800, earnings: 1470 }, // commission rate 15%
+  { month: 'Dec', earningsTotal: 630, revenueTotal: 4200 },
+  { month: 'Jan', earningsTotal: 765, revenueTotal: 5100 },
+  { month: 'Feb', earningsTotal: 735, revenueTotal: 4900 },
+  { month: 'Mar', earningsTotal: 1020, revenueTotal: 6800 },
+  { month: 'Apr', earningsTotal: 1080, revenueTotal: 7200 },
+  { month: 'May', earningsTotal: 1470, revenueTotal: 9800 },
 ];
 
 export const MOCK_TOP_SERVICES: TopServiceStat[] = [
@@ -372,11 +364,10 @@ export const MOCK_TOP_SERVICES: TopServiceStat[] = [
 ];
 
 export const MOCK_DASHBOARD_STATS: DashboardStats = {
-  totalBookings: 311,
-  activeProviders: 2,
-  weeklyRevenue: 2450.0,
-  platformCommissionRate: 15, // 15%
-  totalPayoutsPaid: 950.5,
+  totalRevenue: 2450.0,
+  totalCommission: 367.5,
+  accruedBalance: 12500.0,
+  platformFeePct: 15,
 };
 
 export const MOCK_NOTIFICATIONS: SystemNotification[] = [

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import { notificationService } from '../../../services';
 
 interface LogNotificationItem {
   id: string;
@@ -16,6 +17,7 @@ export default function NotificationsPage() {
   const [mounted, setMounted] = useState(false);
 
   // Form states
+  const [sending, setSending] = useState(false);
   const [deliveryMode, setDeliveryMode] = useState<'Send Now' | 'Schedule'>('Send Now');
   const [activeAudience, setActiveAudience] = useState<'All' | 'Customer' | 'Provider'>('All');
   const [title, setTitle] = useState('');
@@ -82,26 +84,32 @@ export default function NotificationsPage() {
 
   const [notificationLogs, setNotificationLogs] = useState<LogNotificationItem[]>(initialLogs);
 
-  const handleSendNotification = (e: React.FormEvent) => {
+  const handleSendNotification = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !message) return;
-
-    const newLog: LogNotificationItem = {
-      id: `notif-${Date.now()}`,
-      title: title,
-      body: message,
-      audience: activeAudience,
-      dateTime: new Date().toLocaleDateString('en-GB'),
-      status: deliveryMode === 'Send Now' ? 'Sent' : 'Scheduled',
-    };
-
-    setNotificationLogs([newLog, ...notificationLogs]);
-    setSuccessBanner(`Notification alert "${title}" successfully dispatched to registered ${activeAudience} devices!`);
-    
-    // Clear inputs
-    setTitle('');
-    setMessage('');
-
+    try {
+      setSending(true);
+      const audienceMap = { All: 'all', Customer: 'customers', Provider: 'providers' } as const;
+      const created = await notificationService.broadcastNotification(
+        title, message, audienceMap[activeAudience]
+      );
+      setNotificationLogs([{
+        id: created.id,
+        title,
+        body: message,
+        audience: activeAudience,
+        dateTime: new Date().toLocaleDateString('en-GB'),
+        status: 'Sent',
+      }, ...notificationLogs]);
+      setSuccessBanner(`Notification "${title}" dispatched to ${activeAudience}.`);
+      setTitle('');
+      setMessage('');
+    } catch (err) {
+      console.error(err);
+      setSuccessBanner(null);
+    } finally {
+      setSending(false);
+    }
     setTimeout(() => {
       setSuccessBanner(null);
     }, 4000);
@@ -302,10 +310,11 @@ export default function NotificationsPage() {
             {/* Dispatch Send Notifications button */}
             <button
               type="submit"
-              className="w-full h-[59px] bg-main-font hover:bg-main-font/90 text-white rounded-full text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-md"
+              disabled={sending}
+              className="w-full h-[59px] bg-main-font hover:bg-main-font/90 text-white rounded-full text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Icon icon="solar:cursor-bold" className="w-4 h-4 text-white rotate-45" />
-              Send Notifications
+              <Icon icon="solar:cursor-bold" className={`w-4 h-4 text-white ${sending ? '' : 'rotate-45'}`} />
+              {sending ? 'Sending...' : 'Send Notifications'}
             </button>
 
           </form>
