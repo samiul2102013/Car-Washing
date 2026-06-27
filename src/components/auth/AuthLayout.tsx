@@ -10,9 +10,9 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ children, imageSrc, imageAlt }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 flex flex-col justify-center">
-      <div className="max-w-6xl w-full mx-auto grid grid-cols-1 md:grid-cols-2 bg-white rounded-3xl shadow-sm overflow-hidden md:min-h-[85vh]">
-        <div className="hidden md:block relative bg-orange-100 rounded-xl m-3 overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 bg-white min-h-screen">
+        <div className="hidden md:block relative bg-orange-100 overflow-hidden">
           <img
             src={imageSrc}
             alt={imageAlt}
