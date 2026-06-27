@@ -6,6 +6,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianG
 import { earningService } from '../../../services';
 import { DashboardStats, EarningStats, EarningTransaction } from '../../../types';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/table';
+import { exportPdf } from '../../../lib/exportPdf';
 
 export default function EarningsPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -65,6 +66,24 @@ export default function EarningsPage() {
           </button>
 
           <button
+            onClick={() => {
+              const rows = transactions.map((tx) => ({
+                customer: tx.customer,
+                provider: tx.provider,
+                service: tx.service,
+                amount: `€${tx.grossAmount.toFixed(2)}`,
+                commission: `€${tx.commission.toFixed(2)}`,
+                status: tx.status,
+              }));
+              exportPdf('earnings-report.pdf', 'Earnings Report', [
+                { header: 'Customer', dataKey: 'customer' },
+                { header: 'Provider', dataKey: 'provider' },
+                { header: 'Service', dataKey: 'service' },
+                { header: 'Amount', dataKey: 'amount' },
+                { header: 'Commission', dataKey: 'commission' },
+                { header: 'Status', dataKey: 'status' },
+              ], rows);
+            }}
             className="flex items-center gap-2 h-[46px] px-6 bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-md shadow-main-font/10 cursor-pointer"
           >
             <Icon icon="solar:file-download-linear" className="w-4.5 h-4.5 text-white" />

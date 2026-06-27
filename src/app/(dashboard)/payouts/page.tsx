@@ -5,6 +5,7 @@ import { Icon } from '@iconify/react';
 import { payoutService } from '../../../services';
 import { Payout, PayoutStatus } from '../../../types';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/table';
+import { exportPdf } from '../../../lib/exportPdf';
 
 export default function PayoutsPage() {
   const [payouts, setPayouts] = useState<Payout[]>([]);
@@ -79,6 +80,19 @@ export default function PayoutsPage() {
           </button>
           
           <button
+            onClick={() => exportPdf('payouts.pdf', 'Payouts Report', [
+              { header: 'Provider', dataKey: 'provider' },
+              { header: 'Amount', dataKey: 'amount' },
+              { header: 'Date', dataKey: 'date' },
+              { header: 'Status', dataKey: 'status' },
+              { header: 'Bank', dataKey: 'bank' },
+            ], payouts.map((p) => ({
+              provider: p.providerName,
+              amount: `€${p.amount.toFixed(2)}`,
+              date: p.date,
+              status: p.status,
+              bank: p.bankName,
+            })))}
             className="flex items-center gap-2 h-[46px] px-6 bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-md shadow-main-font/10 cursor-pointer"
           >
             <Icon icon="solar:file-download-linear" className="w-4.5 h-4.5 text-white" />
@@ -359,7 +373,21 @@ export default function PayoutsPage() {
                 </button>
                 
                 <button
-                  onClick={() => setSelectedPayoutId(null)}
+                  onClick={() => {
+                    if (!selectedPayout) return;
+                    exportPdf(`invoice-${selectedPayout.id}.pdf`, `Invoice #${selectedPayout.id}`, [
+                      { header: 'Field', dataKey: 'field' },
+                      { header: 'Value', dataKey: 'value' },
+                    ], [
+                      { field: 'Provider', value: selectedPayout.providerName },
+                      { field: 'Amount', value: `€${selectedPayout.amount.toFixed(2)}` },
+                      { field: 'Date', value: selectedPayout.date },
+                      { field: 'Status', value: selectedPayout.status },
+                      { field: 'Bank', value: selectedPayout.bankName },
+                      { field: 'Account', value: selectedPayout.accountNumber },
+                      { field: 'Transaction', value: selectedPayout.transactionHash },
+                    ]);
+                  }}
                   className="flex items-center justify-center gap-2 h-[46px] bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold font-black uppercase transition-all shadow-md cursor-pointer active:scale-[0.98]"
                 >
                   <Icon icon="solar:file-download-linear" className="w-4 h-4 text-white" />

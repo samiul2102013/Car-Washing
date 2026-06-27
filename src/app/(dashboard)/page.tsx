@@ -7,6 +7,7 @@ import StatCard from '../../components/dashboard/StatCard';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { dashboardService } from '../../services';
 import type { DashboardApiData } from '../../types';
+import { exportPdf } from '../../lib/exportPdf';
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
@@ -91,7 +92,22 @@ export default function DashboardPage() {
             <Icon icon="solar:restart-linear" className={`w-4.5 h-4.5 text-dark-300 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-          <button className="flex items-center gap-2 h-[46px] px-6 bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-md cursor-pointer">
+          <button
+            onClick={() => {
+              if (!data) return;
+              exportPdf('dashboard-report.pdf', 'Dashboard Report', [
+                { header: 'Metric', dataKey: 'metric' },
+                { header: 'Value', dataKey: 'value' },
+              ], [
+                { metric: 'Total Orders', value: stats.totalOrders.toLocaleString() },
+                { metric: 'Total Providers', value: stats.totalProviders.toLocaleString() },
+                { metric: 'Total Customers', value: stats.totalCustomers.toLocaleString() },
+                { metric: 'Total Revenue', value: `€${stats.totalRevenue.toFixed(2)}` },
+                { metric: 'Total Commission', value: `€${stats.totalCommission.toFixed(2)}` },
+              ]);
+            }}
+            className="flex items-center gap-2 h-[46px] px-6 bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-md cursor-pointer"
+          >
             <Icon icon="solar:file-download-linear" className="w-4.5 h-4.5 text-white" />
             Export
           </button>

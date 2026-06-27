@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react';
 import { userService } from '../../../services';
 import { API_BASE_URL } from '../../../constants/config';
 import { User, UserStatus, ProviderDocument } from '../../../types';
+import { exportPdf } from '../../../lib/exportPdf';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/table';
 
 export default function UsersPage() {
@@ -23,15 +24,32 @@ export default function UsersPage() {
   const [selectedDocIndex, setSelectedDocIndex] = useState<number | null>(null);
 
   // Helper to select/close user and reset modals
-  const selectUser = (id: string | null) => {
+  const selectUser = async (id: string | null) => {
     setSelectedUserId(id);
     setIsDocVerifyOpen(false);
     setVerifyStep('list');
     setSelectedDocIndex(null);
+    // Eagerly fetch documents for provider users
+    if (id) {
+      const user = users.find((u) => u.id === id);
+      if (user?.role === 'provider') {
+        try {
+          const docs = await userService.getProviderDocuments(id);
+          setProviderDocs(docs);
+        } catch {
+          setProviderDocs([]);
+        }
+      } else {
+        setProviderDocs([]);
+      }
+    }
   };
 
   const [providerDocs, setProviderDocs] = useState<ProviderDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+
+  const allDocsApproved = providerDocs.length > 0 && providerDocs.every((d) => d.status === 'approved');
+  const anyDocsRejected = providerDocs.some((d) => d.status === 'rejected');
 
   // Load from API
   const fetchUsers = async () => {
@@ -85,36 +103,37 @@ export default function UsersPage() {
     }
   };
 
-  const handleApproveProvider = async (id: string) => {
-    try {
-      await userService.approveProvider(id);
-      await fetchUsers();
-      setIsDocVerifyOpen(false);
-    } catch {
-      setIsDocVerifyOpen(false);
-    }
-  };
-
-  const handleRejectProvider = async (id: string) => {
-    try {
-      await userService.rejectProvider(id);
-      await fetchUsers();
-      setIsDocVerifyOpen(false);
-    } catch {
-      setIsDocVerifyOpen(false);
-    }
-  };
-
-  const handleReviewDocument = async (docId: string, status: 'approved' | 'rejected') => {
+  const handleApproveAllDocuments = async () => {
     try {
       setDocsLoading(true);
-      await userService.reviewDocument(docId, status, '');
-      const docs = await userService.getProviderDocuments(selectedUser!.id);
-      setProviderDocs(docs);
-      setVerifyStep('list');
-      setSelectedDocIndex(null);
+      for (const doc of providerDocs) {
+        if (doc.status !== 'approved') {
+          await userService.reviewDocument(String(doc.id), 'approved', '');
+        }
+      }
+      const freshDocs = await userService.getProviderDocuments(selectedUser!.id);
+      setProviderDocs(freshDocs);
+      setIsDocVerifyOpen(false);
     } catch {
-      // stay on detail view
+      setIsDocVerifyOpen(false);
+    } finally {
+      setDocsLoading(false);
+    }
+  };
+
+  const handleRejectAllDocuments = async () => {
+    try {
+      setDocsLoading(true);
+      for (const doc of providerDocs) {
+        if (doc.status !== 'rejected') {
+          await userService.reviewDocument(String(doc.id), 'rejected', '');
+        }
+      }
+      const freshDocs = await userService.getProviderDocuments(selectedUser!.id);
+      setProviderDocs(freshDocs);
+      setIsDocVerifyOpen(false);
+    } catch {
+      setIsDocVerifyOpen(false);
     } finally {
       setDocsLoading(false);
     }
@@ -147,6 +166,19 @@ export default function UsersPage() {
           </button>
           
           <button
+            onClick={() => exportPdf('users.pdf', 'Users Report', [
+              { header: 'Name', dataKey: 'name' },
+              { header: 'Email', dataKey: 'email' },
+              { header: 'Role', dataKey: 'role' },
+              { header: 'Status', dataKey: 'status' },
+              { header: 'Phone', dataKey: 'phone' },
+            ], filteredUsers.map((u) => ({
+              name: u.name,
+              email: u.email,
+              role: u.role.charAt(0).toUpperCase() + u.role.slice(1),
+              status: u.status.charAt(0).toUpperCase() + u.status.slice(1),
+              phone: u.phone,
+            })))}
             className="flex items-center gap-2 h-[46px] px-6 bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-md shadow-main-font/10 cursor-pointer"
           >
             <Icon icon="solar:file-download-linear" className="w-4.5 h-4.5 text-white" />
@@ -455,28 +487,41 @@ export default function UsersPage() {
                 {/* UPLOADED DOCUMENTS trigger card row for PROVIDER (Screenshot 1) */}
                 {selectedUser.role === 'provider' && (
                   <div 
-                    onClick={async () => {
+                    onClick={() => {
                       setIsDocVerifyOpen(true);
                       setVerifyStep('list');
-                      setDocsLoading(true);
-                      try {
-                        const docs = await userService.getProviderDocuments(selectedUser.id);
-                        setProviderDocs(docs);
-                      } catch {
-                        setProviderDocs([]);
-                      } finally {
-                        setDocsLoading(false);
-                      }
                     }}
                     className="bg-[#F4F5F8] border border-slate-100 hover:border-slate-200 hover:bg-[#EBECF0] p-4 rounded-2xl flex items-center justify-between cursor-pointer w-full mt-4 transition-all duration-200 active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#FFF5EE] flex items-center justify-center shrink-0">
-                        <Icon icon="solar:document-text-bold" className="w-5 h-5 text-orange-500" />
+                      <div className="relative">
+                        <div className="w-10 h-10 rounded-xl bg-[#FFF5EE] flex items-center justify-center shrink-0">
+                          <Icon icon="solar:document-text-bold" className="w-5 h-5 text-orange-500" />
+                        </div>
+                        {/* Status dot */}
+                        {providerDocs.length > 0 && (
+                          <div className={`absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center
+                            ${allDocsApproved ? 'bg-green-500' : anyDocsRejected ? 'bg-red-500' : 'bg-amber-400'}
+                          `}>
+                            <Icon 
+                              icon={allDocsApproved ? 'solar:check-bold' : anyDocsRejected ? 'solar:danger-bold' : 'solar:clock-circle-bold'} 
+                              className="w-2.5 h-2.5 text-white" 
+                            />
+                          </div>
+                        )}
                       </div>
-                      <span className="text-[11px] font-bold text-slate-700 tracking-wider pl-1 select-none">
-                        UPLOADED DOCUMENTS
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-bold text-slate-700 tracking-wider pl-1 select-none">
+                          UPLOADED DOCUMENTS
+                        </span>
+                        {providerDocs.length > 0 && (
+                          <span className={`text-[9px] font-bold pl-1 mt-0.5 select-none
+                            ${allDocsApproved ? 'text-green-600' : anyDocsRejected ? 'text-red-500' : 'text-amber-600'}
+                          `}>
+                            {allDocsApproved ? 'All verified' : anyDocsRejected ? 'Issues found' : `${providerDocs.filter(d => d.status === 'pending').length} pending`}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <Icon icon="solar:alt-arrow-right-linear" className="w-5 h-5 text-slate-400" />
                   </div>
@@ -593,19 +638,21 @@ export default function UsersPage() {
                 </div>
               </div>
 
-              {/* Bottom Reject / Approve Buttons */}
+              {/* Bottom Reject All / Approve All Buttons */}
               <div className="pt-6 border-t border-slate-100 flex items-center gap-3 mt-8">
                 <button
-                  onClick={() => handleRejectProvider(selectedUser.id)}
-                  className="flex-1 h-[46px] rounded-full bg-[#EA4335] hover:bg-[#D93025] text-white text-xs font-bold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-rose-500/10 border-0"
+                  onClick={handleRejectAllDocuments}
+                  disabled={docsLoading}
+                  className="flex-1 h-[46px] rounded-full bg-[#EA4335] hover:bg-[#D93025] text-white text-xs font-bold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-rose-500/10 border-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Reject
+                  {docsLoading ? 'Rejecting...' : 'Reject All'}
                 </button>
                 <button
-                  onClick={() => handleApproveProvider(selectedUser.id)}
-                  className="flex-1 h-[46px] rounded-full bg-[#34A853] hover:bg-[#2B8E43] text-white text-xs font-bold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/10 border-0"
+                  onClick={handleApproveAllDocuments}
+                  disabled={docsLoading}
+                  className="flex-1 h-[46px] rounded-full bg-[#34A853] hover:bg-[#2B8E43] text-white text-xs font-bold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/10 border-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Approve
+                  {docsLoading ? 'Approving...' : 'Approve All'}
                 </button>
               </div>
             </div>
@@ -680,21 +727,13 @@ export default function UsersPage() {
                         <p className="text-xs font-medium text-slate-700">{doc.adminNote}</p>
                       </div>
                     )}
-                    {/* Bottom Reject / Approve Buttons */}
+                    {/* Back to list button */}
                     <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
                       <button
-                        onClick={() => handleReviewDocument(String(doc.id), 'rejected')}
-                        className="flex-1 h-[48px] rounded-full bg-[#EA4335] hover:bg-[#D93025] text-white text-xs font-bold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-rose-500/10 border-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={docsLoading}
+                        onClick={() => { setVerifyStep('list'); setSelectedDocIndex(null); }}
+                        className="flex-1 h-[48px] rounded-full bg-[#E9EBEF] hover:bg-[#DCE0E5] text-[#2D2F33] text-xs font-bold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border-0"
                       >
-                        Reject
-                      </button>
-                      <button
-                        onClick={() => handleReviewDocument(String(doc.id), 'approved')}
-                        className="flex-1 h-[48px] rounded-full bg-[#34A853] hover:bg-[#2B8E43] text-white text-xs font-bold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/10 border-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={docsLoading}
-                      >
-                        Approve
+                        Back to Documents List
                       </button>
                     </div>
                   </>

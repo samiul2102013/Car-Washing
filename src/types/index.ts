@@ -187,10 +187,26 @@ export interface ProviderDocument {
   reviewedAt: string | null;
 }
 
-export interface DirtLevelFees {
-  Light: number;
-  Medium: number;
-  Heavy: number;
+export interface VehicleType {
+  id: number;
+  name: string;
+  extraPrice: number;
+  isActive: boolean;
+  image?: string | null;
+}
+
+export interface EngineType {
+  id: number;
+  engineType: 'electric' | 'petrol';
+  discountPercent: number;
+  description: string;
+}
+
+export interface DirtLevel {
+  id: number;
+  level: 'light' | 'medium' | 'heavy';
+  description: string;
+  extraPrice: number;
 }
 
 // ---------------------------------------------------------------------------

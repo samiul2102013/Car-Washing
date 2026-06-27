@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Icon } from '@iconify/react';
+import Link from 'next/link';
 import { useAuth } from '../../providers/AuthProvider';
-import { cn } from '../../lib/utils';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -85,23 +85,23 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         </div>
 
         {user && (
-          <div className="flex items-center gap-3.5 pl-2">
-            <div className="w-9 h-9 rounded-full overflow-hidden border border-border/50 shadow-sm relative group cursor-pointer">
+          <Link href="/settings" className="flex items-center gap-3.5 pl-2 group">
+            <div className="w-9 h-9 rounded-full overflow-hidden border border-border/50 shadow-sm relative cursor-pointer">
               <img
-                src={user.avatarUrl}
+                src={user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Admin'}
                 alt={user.name}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
             <div className="hidden sm:block text-left leading-none">
-              <h3 className="text-xs font-extrabold text-main-font tracking-tight">
+              <h3 className="text-xs font-extrabold text-main-font tracking-tight group-hover:text-orange-300 transition-colors">
                 {user.name}
               </h3>
               <span className="text-[9px] font-bold text-dark-200 tracking-wide mt-1 block lowercase">
                 {user.email}
               </span>
             </div>
-          </div>
+          </Link>
         )}
       </div>
     </header>

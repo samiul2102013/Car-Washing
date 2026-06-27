@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react';
 import { bookingService } from '../../../services';
 import { Booking } from '../../../types';
 import MapView from '../../../components/features/MapView';
+import { exportPdf } from '../../../lib/exportPdf';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/table';
 
 function BookingsContent() {
@@ -97,6 +98,19 @@ function BookingsContent() {
           </button>
           
           <button
+            onClick={() => exportPdf('bookings.pdf', 'Bookings Report', [
+              { header: 'Customer', dataKey: 'customer' },
+              { header: 'Service', dataKey: 'service' },
+              { header: 'Date', dataKey: 'date' },
+              { header: 'Amount', dataKey: 'amount' },
+              { header: 'Status', dataKey: 'status' },
+            ], bookings.map((b) => ({
+              customer: b.customerName,
+              service: b.serviceName,
+              date: b.date,
+              amount: `€${b.totalAmount.toFixed(2)}`,
+              status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
+            })))}
             className="flex items-center gap-2 h-[46px] px-6 bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold transition-all duration-200 active:scale-[0.98] shadow-md shadow-main-font/10 cursor-pointer"
           >
             <Icon icon="solar:file-download-linear" className="w-4.5 h-4.5 text-white" />

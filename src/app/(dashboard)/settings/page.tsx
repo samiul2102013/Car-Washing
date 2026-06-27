@@ -3,19 +3,22 @@
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useAuth } from '../../../providers/AuthProvider';
+import { authService } from '../../../services/auth/service';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'privacy' | 'terms'>('profile');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   // Profile forms
-  const [firstName, setFirstName] = useState('Sarah');
-  const [lastName, setLastName] = useState('Jessie');
-  const [profileEmail, setProfileEmail] = useState('Sarah@gmail.com');
-  const [profilePhone, setProfilePhone] = useState('+00888888');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   // Security forms
   const [currentPassword, setCurrentPassword] = useState('');
@@ -33,22 +36,50 @@ export default function SettingsPage() {
     setMounted(true);
   }, []);
 
+  // Fetch profile from API on mount to get latest data (phone, avatar, etc.)
   useEffect(() => {
-    if (user) {
-      setFirstName(user.name?.split(' ')[0] || 'Sarah');
-      setLastName(user.name?.split(' ')[1] || 'Jessie');
-      setProfileEmail(user.email || 'Sarah@gmail.com');
-    }
-  }, [user]);
+    if (!mounted || !user) return;
+    (async () => {
+      try {
+        const profile = await authService.getProfile();
+        const nameParts = profile.fullName.split(' ');
+        setFirstName(nameParts[0] || '');
+        setLastName(nameParts.slice(1).join(' ') || '');
+        setProfileEmail(profile.email);
+        setProfilePhone(profile.phone);
+        if (profile.avatar) setAvatarPreview(profile.avatar);
+      } catch {
+        // fallback to context user
+        setFirstName(user.name?.split(' ')[0] || '');
+        setLastName(user.name?.split(' ').slice(1).join(' ') || '');
+        setProfileEmail(user.email || '');
+        setProfilePhone(user.phone || '');
+      }
+    })();
+  }, [mounted, user]);
 
   // Handle Profile Update
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setMessage('Profile updated successfully!');
-    setLoading(false);
-    setTimeout(() => setMessage(null), 3000);
+    try {
+      const fullName = `${firstName} ${lastName}`.trim();
+      let profile;
+      if (avatarFile) {
+        profile = await authService.updateProfileWithAvatar({ full_name: fullName, email: profileEmail, phone: profilePhone, avatar: avatarFile });
+        setAvatarFile(null);
+      } else {
+        profile = await authService.updateProfile({ full_name: fullName, email: profileEmail, phone: profilePhone });
+      }
+      updateUser({ name: profile.fullName, email: profile.email, phone: profile.phone, avatarUrl: profile.avatar });
+      if (profile.avatar) setAvatarPreview(profile.avatar);
+      setMessage('Profile updated successfully!');
+    } catch {
+      setMessage('Error: Failed to update profile.');
+    } finally {
+      setLoading(false);
+      setTimeout(() => setMessage(null), 3000);
+    }
   };
 
   // Handle Password Change
@@ -57,17 +88,27 @@ export default function SettingsPage() {
     if (!currentPassword || !newPassword || !confirmPassword) return;
     if (newPassword !== confirmPassword) {
       setMessage('Error: New passwords do not match.');
+      setTimeout(() => setMessage(null), 3000);
       return;
     }
 
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setMessage('Password updated successfully!');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setLoading(false);
-    setTimeout(() => setMessage(null), 3000);
+    try {
+      await authService.changePassword({
+        old_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      });
+      setMessage('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch {
+      setMessage('Error: Failed to update password.');
+    } finally {
+      setLoading(false);
+      setTimeout(() => setMessage(null), 3000);
+    }
   };
 
   // Save privacy/terms
@@ -145,18 +186,41 @@ export default function SettingsPage() {
             <div className="flex justify-center mb-8">
               <div className="relative">
                 <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-md">
-                  <img
-                    src={user?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah'}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
+                  <label className="cursor-pointer block w-full h-full">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setAvatarFile(file);
+                          setAvatarPreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                    <img
+                      src={avatarPreview || user?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Admin'}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  </label>
                 </div>
-                <button
-                  type="button"
-                  className="absolute bottom-1 right-1 w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-white shadow cursor-pointer"
-                >
+                <label className="absolute bottom-1 right-1 w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-white shadow cursor-pointer">
                   <Icon icon="solar:pen-2-bold" className="w-4 h-4" />
-                </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setAvatarFile(file);
+                        setAvatarPreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                </label>
               </div>
             </div>
 
@@ -187,20 +251,6 @@ export default function SettingsPage() {
                       required
                     />
                   </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm text-main-font mb-2">Email</label>
-                <div className="relative">
-                  <Icon icon="solar:letter-linear" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-200" />
-                  <input
-                    type="email"
-                    value={profileEmail}
-                    onChange={(e) => setProfileEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 text-sm rounded-full bg-dark-50 text-main-font placeholder-dark-200 focus:outline-none focus:ring-2 focus:ring-orange-300/20"
-                    required
-                  />
                 </div>
               </div>
 

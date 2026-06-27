@@ -24,6 +24,8 @@ export { dashboardService } from './dashboard/service';
 export { earningService } from './earnings/service';
 export { mapEarningStats, mapEarningTransaction } from './earnings/mapper';
 
-export { carTypeService } from './car-types/service';
+export { vehicleTypeService } from './vehicle-types/service';
+export { engineTypeService } from './engine-types/service';
+export { dirtLevelService } from './dirt-levels/service';
 
 export type { BookingStatus } from '../types';

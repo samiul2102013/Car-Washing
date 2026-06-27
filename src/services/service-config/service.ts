@@ -16,14 +16,19 @@ export const serviceConfigService = {
     basePrice: number;
     isActive?: boolean;
     order?: number;
+    vehicleType?: number | null;
+    engineType?: number | null;
   }): Promise<Service> {
-    const data = await api.post<unknown>('/api/admin/services/', {
+    const body: Record<string, unknown> = {
       name: input.name,
       description: input.description,
       base_price: String(input.basePrice),
       is_active: input.isActive ?? true,
       order: input.order ?? 0,
-    });
+    };
+    if (input.vehicleType !== undefined && input.vehicleType !== null) body.vehicle_type = input.vehicleType;
+    if (input.engineType !== undefined && input.engineType !== null) body.engine_type = input.engineType;
+    const data = await api.post<unknown>('/api/admin/services/', body);
     return mapService(camelKeys(data) as Record<string, any>);
   },
 

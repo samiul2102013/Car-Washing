@@ -3,85 +3,153 @@
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import Link from 'next/link';
+import { vehicleTypeService, engineTypeService } from '../../../services';
+import { VehicleType, EngineType } from '../../../types';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/table';
-
-interface CarTypeItem {
-  id: string;
-  name: string;
-  engineType: 'Petrol' | 'Electric';
-  basePrice: number;
-  status: 'Active' | 'Draft';
-  imageUrl: string;
-}
 
 export default function CarTypesPage() {
   const [activeTab, setActiveTab] = useState<'All' | 'Petrol' | 'Electric'>('All');
   const [mounted, setMounted] = useState(false);
 
-  // Form states matching SVG design
-  const [engineType, setEngineType] = useState<'Petrol' | 'Electric'>('Petrol');
+  // Vehicle Types state
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
+  const [vtLoading, setVtLoading] = useState(true);
+
+  // Engine Types state
+  const [engineTypes, setEngineTypes] = useState<EngineType[]>([]);
+  const [etLoading, setEtLoading] = useState(true);
+
+  // Add Vehicle Type form
   const [carName, setCarName] = useState('');
-  const [basePrice, setBasePrice] = useState('');
+  const [extraPrice, setExtraPrice] = useState('');
+  const [sending, setSending] = useState(false);
+
+  // Edit Vehicle Type state
+  const [editingVt, setEditingVt] = useState<VehicleType | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editExtraPrice, setEditExtraPrice] = useState('');
+
+  // Edit Engine Type state
+  const [editingEt, setEditingEt] = useState<EngineType | null>(null);
+  const [editDiscount, setEditDiscount] = useState('');
+  const [editEtDesc, setEditEtDesc] = useState('');
+
+  const fetchAll = async () => {
+    try {
+      setVtLoading(true);
+      setEtLoading(true);
+      const [vts, ets] = await Promise.all([
+        vehicleTypeService.list(),
+        engineTypeService.list(),
+      ]);
+      setVehicleTypes(vts);
+      setEngineTypes(ets);
+    } catch {
+      // handled
+    } finally {
+      setVtLoading(false);
+      setEtLoading(false);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
+    fetchAll();
   }, []);
 
-  const figmaCarTypes: CarTypeItem[] = [
-    {
-      id: 'car-1',
-      name: 'SEDAN',
-      engineType: 'Petrol',
-      basePrice: 250,
-      status: 'Active',
-      imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=150&q=80'
-    },
-    {
-      id: 'car-2',
-      name: 'SEDAN',
-      engineType: 'Petrol',
-      basePrice: 250,
-      status: 'Active',
-      imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=150&q=80'
-    },
-    {
-      id: 'car-3',
-      name: 'SEDAN',
-      engineType: 'Electric',
-      basePrice: 250,
-      status: 'Active',
-      imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=150&q=80'
-    },
-    {
-      id: 'car-4',
-      name: 'SEDAN',
-      engineType: 'Electric',
-      basePrice: 250,
-      status: 'Active',
-      imageUrl: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=150&q=80'
-    }
-  ];
-
-  if (!mounted) {
-    return <CarTypesLoadingSkeleton />;
-  }
-
-  // Filter list by Engine
-  const displayCarTypes = figmaCarTypes.filter(c => {
+  const filteredVts = vehicleTypes.filter(() => {
     if (activeTab === 'All') return true;
-    return c.engineType === activeTab;
+    return true; // engine-type filter is UI-only per option C
   });
+
+  const handleAdd = async () => {
+    if (!carName || !extraPrice) return;
+    setSending(true);
+    try {
+      await vehicleTypeService.add({ name: carName, extra_price: extraPrice, is_active: true });
+      setCarName('');
+      setExtraPrice('');
+      await fetchAll();
+    } catch {
+      // handled
+    } finally {
+      setSending(false);
+    }
+  };
 
   const handleClearForm = () => {
     setCarName('');
-    setBasePrice('');
-    setEngineType('Petrol');
+    setExtraPrice('');
   };
+
+  const handleStartEditVt = (vt: VehicleType) => {
+    setEditingVt(vt);
+    setEditName(vt.name);
+    setEditExtraPrice(String(vt.extraPrice));
+  };
+
+  const handleSaveEditVt = async () => {
+    if (!editingVt) return;
+    try {
+      await vehicleTypeService.update(editingVt.id, {
+        name: editName,
+        extra_price: editExtraPrice,
+      });
+      setEditingVt(null);
+      await fetchAll();
+    } catch {
+      // handled
+    }
+  };
+
+  const handleDeleteVt = async (id: number) => {
+    if (!confirm('Delete this vehicle type?')) return;
+    try {
+      await vehicleTypeService.remove(id);
+      await fetchAll();
+    } catch {
+      // handled
+    }
+  };
+
+  const handleStartEditEt = (et: EngineType) => {
+    setEditingEt(et);
+    setEditDiscount(String(et.discountPercent));
+    setEditEtDesc(et.description);
+  };
+
+  const handleSaveEditEt = async () => {
+    if (!editingEt) return;
+    try {
+      await engineTypeService.update(editingEt.id, {
+        discount_percent: editDiscount,
+        description: editEtDesc,
+      });
+      setEditingEt(null);
+      await fetchAll();
+    } catch {
+      // handled
+    }
+  };
+
+  const handleDeleteEt = async (id: number) => {
+    if (!confirm('Delete this engine type?')) return;
+    try {
+      await engineTypeService.remove(id);
+      await fetchAll();
+    } catch {
+      // handled
+    }
+  };
+
+  if (!mounted || (vtLoading && etLoading)) {
+    return <CarTypesLoadingSkeleton />;
+  }
 
   return (
     <div className="space-y-8 w-full pb-12 animate-fade-in font-sans">
-      
-      {/* 1. Header with circular back button (Figma exact alignment) */}
+
+      {/* 1. Header */}
       <div className="flex items-center gap-4">
         <Link
           href="/services"
@@ -99,9 +167,8 @@ export default function CarTypesPage() {
         </div>
       </div>
 
-      {/* 2. Add New Car Type Permanent Inline Card Form (Exact matching SVG styling and dimensions) */}
+      {/* 2. Add New Car Type Form */}
       <div className="bg-white border border-border rounded-xl p-8 shadow-sm">
-        
         <div className="mb-6">
           <h3 className="text-h5-bold text-main-font tracking-tight">
             Add New Car Type
@@ -111,121 +178,54 @@ export default function CarTypesPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-          
-          {/* Left Column: Image Upload Area (h-[354px] from SVG) */}
-          <div className="space-y-2.5 w-full">
+        <div className="space-y-6 w-full max-w-lg">
+          <div className="space-y-2">
             <span className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
-              Car Image
+              Car Name
             </span>
-            <div className="border-2 border-dashed border-[#B9B9B9] rounded-[11px] bg-dark-50/50 h-[354px] flex flex-col items-center justify-center p-6 cursor-pointer hover:bg-dark-50 transition-all duration-200 shadow-sm group">
-              <Icon icon="solar:cloud-upload-linear" className="w-16 h-16 text-[#B9B9B9] mb-4 group-hover:scale-105 transition-transform" />
-              <span className="text-sm font-bold text-subtitle-2 block">
-                Click to upload or drag image
-              </span>
-              <span className="text-caption1 text-dark-200 mt-2 block">
-                PNG, JPG up to 5MB
-              </span>
-            </div>
+            <input
+              type="text"
+              value={carName}
+              onChange={(e) => setCarName(e.target.value)}
+              placeholder="e.g. Sedan, SUV"
+              className="w-full h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
+            />
           </div>
 
-          {/* Right Column: Engine, Name & Price inputs */}
-          <div className="space-y-6 w-full">
-            
-            {/* Engine Type Selector Blocks (h-[125px] from SVG) */}
-            <div className="space-y-2">
-              <span className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
-                Engine Type
-              </span>
-              <div className="flex gap-5">
-                {/* Petrol selector */}
-                <button
-                  type="button"
-                  onClick={() => setEngineType('Petrol')}
-                  className={`w-1/2 h-[125px] rounded-xl flex flex-col items-center justify-center gap-2.5 transition-all duration-200 cursor-pointer border active:scale-[0.98]
-                    ${engineType === 'Petrol'
-                      ? 'bg-orange-50 border-orange-300 text-orange-300 shadow-sm'
-                      : 'bg-dark-50 border-border/50 text-dark-200 hover:bg-dark-50/50'
-                    }
-                  `}
-                >
-                  <Icon icon="solar:gas-station-linear" className="w-9 h-9" />
-                  <span className="text-xs font-black uppercase tracking-wider">
-                    Petrol
-                  </span>
-                </button>
-                
-                {/* Electric selector */}
-                <button
-                  type="button"
-                  onClick={() => setEngineType('Electric')}
-                  className={`w-1/2 h-[125px] rounded-xl flex flex-col items-center justify-center gap-2.5 transition-all duration-200 cursor-pointer border active:scale-[0.98]
-                    ${engineType === 'Electric'
-                      ? 'bg-[#E6F4EA]/60 border-[#137333]/25 text-[#137333] shadow-sm'
-                      : 'bg-dark-50 border-border/50 text-dark-200 hover:bg-dark-50/50'
-                    }
-                  `}
-                >
-                  <Icon icon="solar:bolt-circle-linear" className="w-9 h-9" />
-                  <span className="text-xs font-black uppercase tracking-wider">
-                    Electric
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* Car Name Input (h-[59px] from SVG) */}
-            <div className="space-y-2">
-              <label className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
-                Car Name
-              </label>
-              <input
-                type="text"
-                value={carName}
-                onChange={(e) => setCarName(e.target.value)}
-                placeholder="e.g. Sedan, SUV"
-                className="w-full h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
-              />
-            </div>
-
-            {/* Base Price Input (h-[59px] from SVG) */}
-            <div className="space-y-2">
-              <label className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
-                Base Price
-              </label>
-              <input
-                type="text"
-                value={basePrice}
-                onChange={(e) => setBasePrice(e.target.value)}
-                placeholder="€ 250"
-                className="w-full h-[59px] px-6 text-sm font-extrabold rounded-full border-0 bg-dark-50/60 text-main-font placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
-              />
-            </div>
-
-            {/* Action Buttons Row (Clear: w-[276px] h-[58px], Add: w-[277px] h-[59px] from SVG) */}
-            <div className="flex justify-end pt-4 gap-4">
-              <button
-                type="button"
-                onClick={handleClearForm}
-                className="flex items-center justify-center w-[276px] h-[58px] bg-dark-50 hover:bg-[#DCE0E5] text-dark-300 rounded-full text-sm font-bold transition-all shadow-sm cursor-pointer active:scale-95"
-              >
-                Clear Form
-              </button>
-              <button
-                type="button"
-                className="flex items-center justify-center w-[277px] h-[59px] bg-main-font hover:bg-main-font/90 text-white rounded-full text-sm font-bold transition-all shadow-md cursor-pointer active:scale-95"
-              >
-                Add Car type
-              </button>
-            </div>
-
+          <div className="space-y-2">
+            <label className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
+              Extra Price
+            </label>
+            <input
+              type="text"
+              value={extraPrice}
+              onChange={(e) => setExtraPrice(e.target.value)}
+              placeholder="10.00"
+              className="w-full h-[59px] px-6 text-sm font-extrabold rounded-full border-0 bg-dark-50/60 text-main-font placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
+            />
           </div>
 
+          <div className="flex justify-end pt-4 gap-4">
+            <button
+              type="button"
+              onClick={handleClearForm}
+              className="flex items-center justify-center w-[276px] h-[58px] bg-dark-50 hover:bg-[#DCE0E5] text-dark-300 rounded-full text-sm font-bold transition-all shadow-sm cursor-pointer active:scale-95"
+            >
+              Clear Form
+            </button>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={sending || !carName || !extraPrice}
+              className="flex items-center justify-center w-[277px] h-[59px] bg-main-font hover:bg-main-font/90 text-white rounded-full text-sm font-bold transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sending ? 'Adding...' : 'Add Car Type'}
+            </button>
+          </div>
         </div>
-
       </div>
 
-      {/* 3. Existing Car Types List */}
+      {/* 3. Existing Vehicle Types List */}
       <div className="space-y-4 pt-4">
         <div>
           <h2 className="text-h5-bold text-main-font tracking-tight">
@@ -233,13 +233,12 @@ export default function CarTypesPage() {
           </h2>
         </div>
 
-        {/* Tab pill selectors (w-[564px] h-[56px] from SVG) */}
         <div className="flex bg-dark-50/65 p-1 rounded-full border border-border/40 w-[564px] h-[56px] items-center shrink-0 select-none">
           <button
             onClick={() => setActiveTab('All')}
             className={`flex-1 h-full flex items-center justify-center rounded-full text-[12px] font-bold transition-all cursor-pointer
-              ${activeTab === 'All' 
-                ? 'bg-white text-orange-300 shadow-sm border border-border/50' 
+              ${activeTab === 'All'
+                ? 'bg-white text-orange-300 shadow-sm border border-border/50'
                 : 'text-dark-300 hover:text-main-font bg-transparent border border-transparent'
               }
             `}
@@ -249,8 +248,8 @@ export default function CarTypesPage() {
           <button
             onClick={() => setActiveTab('Petrol')}
             className={`flex-1 h-full flex items-center justify-center rounded-full text-[12px] font-bold transition-all cursor-pointer
-              ${activeTab === 'Petrol' 
-                ? 'bg-white text-orange-300 shadow-sm border border-border/50' 
+              ${activeTab === 'Petrol'
+                ? 'bg-white text-orange-300 shadow-sm border border-border/50'
                 : 'text-dark-300 hover:text-main-font bg-transparent border border-transparent'
               }
             `}
@@ -260,8 +259,8 @@ export default function CarTypesPage() {
           <button
             onClick={() => setActiveTab('Electric')}
             className={`flex-1 h-full flex items-center justify-center rounded-full text-[12px] font-bold transition-all cursor-pointer
-              ${activeTab === 'Electric' 
-                ? 'bg-white text-orange-300 shadow-sm border border-border/50' 
+              ${activeTab === 'Electric'
+                ? 'bg-white text-orange-300 shadow-sm border border-border/50'
                 : 'text-dark-300 hover:text-main-font bg-transparent border border-transparent'
               }
             `}
@@ -270,86 +269,199 @@ export default function CarTypesPage() {
           </button>
         </div>
 
-        {/* Existing Car Types Table Card */}
         <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[80px]">Image</TableHead>
                 <TableHead>Car Name</TableHead>
-                <TableHead className="text-center">Engine Type</TableHead>
-                <TableHead>Base Price</TableHead>
+                <TableHead>Extra Price</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayCarTypes.map((car, idx) => (
-                <TableRow key={car.id + idx}>
-                  {/* Car Image Box Column */}
-                  <TableCell className="w-[80px]">
-                    <div className="w-[48px] h-[36px] bg-dark-50 border border-border/50 rounded-[6px] overflow-hidden flex items-center justify-center p-1 shrink-0">
-                      <svg className="w-full h-full text-dark-200" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
-                      </svg>
-                    </div>
-                  </TableCell>
-
-                  {/* Car Name (Figma: SEDAN uppercase bold charcoal) */}
-                  <TableCell className="font-black text-main-font">
-                    {car.name}
-                  </TableCell>
-
-                  {/* Engine Type Column (Pump/Bolt in small grey square box) */}
-                  <TableCell>
-                    <div className="flex justify-center">
-                      <div className="w-8 h-8 rounded-[8px] bg-dark-50 border border-border/50 flex items-center justify-center text-dark-300 shadow-sm">
-                        <Icon 
-                          icon={car.engineType === 'Petrol' ? 'solar:gas-station-linear' : 'solar:bolt-circle-linear'} 
-                          className="w-4.5 h-4.5 text-dark-300" 
-                        />
+              {vtLoading ? (
+                <TableRow><TableCell colSpan={4} className="text-center py-8 text-dark-300">Loading...</TableCell></TableRow>
+              ) : filteredVts.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="text-center py-8 text-dark-300">No vehicle types found.</TableCell></TableRow>
+              ) : (
+                filteredVts.map((vt) => (
+                  <TableRow key={vt.id}>
+                    <TableCell className="font-black text-main-font">{vt.name}</TableCell>
+                    <TableCell>
+                      <span className="text-orange-300 font-bold mr-1">€</span>
+                      <span className="text-main-font font-extrabold">{vt.extraPrice.toFixed(2)}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-caption1-bold tracking-wider border uppercase ${vt.isActive ? 'bg-[#E6F4EA]/60 text-[#137333] border-[#137333]/15' : 'bg-amber-50 text-amber-500 border-amber-100/30'}`}>
+                        {vt.isActive ? 'Active' : 'Draft'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleStartEditVt(vt)}
+                          className="p-1.5 bg-dark-50 hover:bg-[#E9EBEF] text-[#5C5F66] rounded-[6px] border border-border/50 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
+                        >
+                          <Icon icon="solar:pen-linear" className="w-4.5 h-4.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVt(vt.id)}
+                          className="p-1.5 bg-[#FFE6E6] hover:bg-[#FFD4D4] text-[#C5221F] rounded-[6px] border border-rose-200/30 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
+                        >
+                          <Icon icon="solar:trash-bin-trash-linear" className="w-4.5 h-4.5" />
+                        </button>
                       </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Base Price Column */}
-                  <TableCell>
-                    <span className="text-orange-300 font-bold mr-1">€</span>
-                    <span className="text-main-font font-extrabold">{car.basePrice}</span>
-                  </TableCell>
-
-                  {/* Status Column */}
-                  <TableCell>
-                    <span className="inline-flex items-center px-3 py-0.5 rounded-full text-caption1-bold tracking-wider border uppercase bg-[#E6F4EA]/60 text-[#137333] border-[#137333]/15">
-                      {car.status}
-                    </span>
-                  </TableCell>
-
-                  {/* Actions edit and delete buttons */}
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => {}}
-                        className="p-1.5 bg-dark-50 hover:bg-[#E9EBEF] text-[#5C5F66] rounded-[6px] border border-border/50 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
-                      >
-                        <Icon icon="solar:pen-linear" className="w-4.5 h-4.5" />
-                      </button>
-                      <button
-                        onClick={() => {}}
-                        className="p-1.5 bg-[#FFE6E6] hover:bg-[#FFD4D4] text-[#C5221F] rounded-[6px] border border-rose-200/30 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
-                      >
-                        <Icon icon="solar:trash-bin-trash-linear" className="w-4.5 h-4.5" />
-                      </button>
-                    </div>
-                  </TableCell>
-
-                </TableRow>
-              ))}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
-
       </div>
+
+      {/* Edit Vehicle Type Modal */}
+      {editingVt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[32px] w-full max-w-[440px] shadow-2xl p-8 z-10 animate-scale-up space-y-6">
+            <h3 className="text-xl font-bold text-[#2D2F33]">Edit Vehicle Type</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-dark-200 mb-1.5">Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full h-[50px] px-5 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-dark-200 mb-1.5">Extra Price (€)</label>
+                <input
+                  type="text"
+                  value={editExtraPrice}
+                  onChange={(e) => setEditExtraPrice(e.target.value)}
+                  className="w-full h-[50px] px-5 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setEditingVt(null)}
+                className="flex-1 h-[46px] rounded-full bg-[#E9EBEF] hover:bg-[#DCE0E5] text-[#2D2F33] text-xs font-bold transition-all cursor-pointer border-0"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditVt}
+                className="flex-1 h-[46px] rounded-full bg-main-font hover:bg-main-font/90 text-white text-xs font-bold transition-all cursor-pointer border-0"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Engine Types Management Section */}
+      <div className="space-y-4 pt-8">
+        <div>
+          <h2 className="text-h5-bold text-main-font tracking-tight">
+            Engine Types
+          </h2>
+          <p className="text-caption1 text-dark-200 font-semibold mt-1">
+            Manage electric / petrol engine types and discounts.
+          </p>
+        </div>
+
+        <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Engine Type</TableHead>
+                <TableHead>Discount %</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {etLoading ? (
+                <TableRow><TableCell colSpan={4} className="text-center py-8 text-dark-300">Loading...</TableCell></TableRow>
+              ) : engineTypes.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="text-center py-8 text-dark-300">No engine types found.</TableCell></TableRow>
+              ) : (
+                engineTypes.map((et) => (
+                  <TableRow key={et.id}>
+                    <TableCell className="font-black text-main-font capitalize">{et.engineType}</TableCell>
+                    <TableCell className="font-extrabold text-main-font">{et.discountPercent}%</TableCell>
+                    <TableCell className="text-dark-300">{et.description}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleStartEditEt(et)}
+                          className="p-1.5 bg-dark-50 hover:bg-[#E9EBEF] text-[#5C5F66] rounded-[6px] border border-border/50 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
+                        >
+                          <Icon icon="solar:pen-linear" className="w-4.5 h-4.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEt(et.id)}
+                          className="p-1.5 bg-[#FFE6E6] hover:bg-[#FFD4D4] text-[#C5221F] rounded-[6px] border border-rose-200/30 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
+                        >
+                          <Icon icon="solar:trash-bin-trash-linear" className="w-4.5 h-4.5" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Edit Engine Type Modal */}
+      {editingEt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[32px] w-full max-w-[440px] shadow-2xl p-8 z-10 animate-scale-up space-y-6">
+            <h3 className="text-xl font-bold text-[#2D2F33]">Edit Engine Type</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-dark-200 mb-1.5">Discount %</label>
+                <input
+                  type="text"
+                  value={editDiscount}
+                  onChange={(e) => setEditDiscount(e.target.value)}
+                  className="w-full h-[50px] px-5 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-dark-200 mb-1.5">Description</label>
+                <input
+                  type="text"
+                  value={editEtDesc}
+                  onChange={(e) => setEditEtDesc(e.target.value)}
+                  className="w-full h-[50px] px-5 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setEditingEt(null)}
+                className="flex-1 h-[46px] rounded-full bg-[#E9EBEF] hover:bg-[#DCE0E5] text-[#2D2F33] text-xs font-bold transition-all cursor-pointer border-0"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditEt}
+                className="flex-1 h-[46px] rounded-full bg-main-font hover:bg-main-font/90 text-white text-xs font-bold transition-all cursor-pointer border-0"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

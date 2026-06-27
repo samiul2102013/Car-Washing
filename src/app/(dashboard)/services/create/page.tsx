@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { serviceConfigService } from '../../../../services';
+import { serviceConfigService, vehicleTypeService, engineTypeService, dirtLevelService } from '../../../../services';
+import { VehicleType, EngineType, DirtLevel } from '../../../../types';
 
 export default function CreateServicePage() {
   const router = useRouter();
@@ -15,17 +16,29 @@ export default function CreateServicePage() {
   const [basePrice, setBasePrice] = useState('');
   const [description, setDescription] = useState('');
 
-  // Dirt Level Config
-  const [dirtLight, setDirtLight] = useState('Light');
-  const [dirtLightPrice, setDirtLightPrice] = useState('€ 39');
-  const [dirtMedium, setDirtMedium] = useState('Medium');
-  const [dirtMediumPrice, setDirtMediumPrice] = useState('€ 39');
-  const [dirtHeavy, setDirtHeavy] = useState('Heavy');
-  const [dirtHeavyPrice, setDirtHeavyPrice] = useState('€ 39');
+  // Vehicle & Engine type selectors
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
+  const [engineTypes, setEngineTypes] = useState<EngineType[]>([]);
+  const [dirtLevels, setDirtLevels] = useState<DirtLevel[]>([]);
+  const [selectedVehicleType, setSelectedVehicleType] = useState<number | ''>('');
+  const [selectedEngineType, setSelectedEngineType] = useState<number | ''>('');
 
   // Platform Fee
   const [feeType, setFeeType] = useState<'Percentage' | 'Fixed'>('Percentage');
   const [feeAmount, setFeeAmount] = useState('€ 39');
+
+  useEffect(() => {
+    (async () => {
+      const [vts, ets, dls] = await Promise.all([
+        vehicleTypeService.list().catch(() => []),
+        engineTypeService.list().catch(() => []),
+        dirtLevelService.list().catch(() => []),
+      ]);
+      setVehicleTypes(vts);
+      setEngineTypes(ets);
+      setDirtLevels(dls);
+    })();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +51,8 @@ export default function CreateServicePage() {
         description,
         basePrice: price,
         isActive: true,
+        vehicleType: selectedVehicleType || null,
+        engineType: selectedEngineType || null,
       });
       router.push('/services');
     } catch (err) {
@@ -48,8 +63,8 @@ export default function CreateServicePage() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 w-full pb-12 animate-fade-in font-sans">
-      
-      {/* 1. Header with Circular Back Button */}
+
+      {/* 1. Header */}
       <div className="flex items-center gap-4">
         <Link
           href="/services"
@@ -73,22 +88,6 @@ export default function CreateServicePage() {
           <h3 className="text-h5-bold text-main-font tracking-tight">
             Service Details
           </h3>
-        </div>
-
-        {/* Image Upload Area */}
-        <div className="space-y-2.5">
-          <span className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
-            Service Image
-          </span>
-          <div className="border-2 border-dashed border-[#B9B9B9] rounded-[11px] bg-dark-50/50 h-[220px] flex flex-col items-center justify-center p-6 cursor-pointer hover:bg-dark-50 transition-all duration-200 shadow-sm group">
-            <Icon icon="solar:cloud-upload-linear" className="w-12 h-12 text-[#B9B9B9] mb-3 group-hover:scale-105 transition-transform" />
-            <span className="text-xs font-bold text-main-font block">
-              Click to upload image
-            </span>
-            <span className="text-caption1 text-dark-200 mt-1.5 block">
-              PNG, JPG up to 5MB
-            </span>
-          </div>
         </div>
 
         {/* Service Name & Base Price row */}
@@ -120,6 +119,41 @@ export default function CreateServicePage() {
           </div>
         </div>
 
+        {/* Vehicle Type & Engine Type selectors */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
+              Vehicle Type
+            </label>
+            <select
+              value={selectedVehicleType}
+              onChange={(e) => setSelectedVehicleType(e.target.value ? Number(e.target.value) : '')}
+              className="w-full h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all appearance-none"
+            >
+              <option value="">None</option>
+              {vehicleTypes.map((vt) => (
+                <option key={vt.id} value={vt.id}>{vt.name} (€{vt.extraPrice.toFixed(2)})</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
+              Engine Type
+            </label>
+            <select
+              value={selectedEngineType}
+              onChange={(e) => setSelectedEngineType(e.target.value ? Number(e.target.value) : '')}
+              className="w-full h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all appearance-none"
+            >
+              <option value="">None</option>
+              {engineTypes.map((et) => (
+                <option key={et.id} value={et.id}>{et.engineType} ({et.discountPercent}% off)</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Description textbox */}
         <div className="space-y-2">
           <label className="block text-caption1-bold text-dark-200 uppercase tracking-wider">
@@ -134,70 +168,36 @@ export default function CreateServicePage() {
         </div>
       </div>
 
-      {/* 3. Bottom Columns (Dirt Level Config & Platform Fee) - UI only, not sent to API yet */}
+      {/* 3. Bottom Columns (Dirt Level Config & Platform Fee) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
+
         {/* Dirt Level Configuration Card */}
         <div className="bg-white border border-border rounded-xl p-8 shadow-sm space-y-6 flex flex-col justify-between">
           <div>
             <h3 className="text-h5-bold text-main-font tracking-tight mb-6">
               Dirt Level Configuration
             </h3>
-            
+
             {/* Headers row */}
             <div className="grid grid-cols-2 text-caption1-bold text-dark-200 uppercase tracking-widest px-1 mb-2">
-              <div>Dirt Level Name</div>
-              <div className="pl-2">Additional Price</div>
+              <div>Dirt Level</div>
+              <div className="pl-2">Extra Price</div>
             </div>
 
             <div className="space-y-4">
-              {/* Row 1: Light */}
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  value={dirtLight}
-                  onChange={(e) => setDirtLight(e.target.value)}
-                  className="h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
-                />
-                <input
-                  type="text"
-                  value={dirtLightPrice}
-                  onChange={(e) => setDirtLightPrice(e.target.value)}
-                  className="h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
-                />
-              </div>
-
-              {/* Row 2: Medium */}
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  value={dirtMedium}
-                  onChange={(e) => setDirtMedium(e.target.value)}
-                  className="h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
-                />
-                <input
-                  type="text"
-                  value={dirtMediumPrice}
-                  onChange={(e) => setDirtMediumPrice(e.target.value)}
-                  className="h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
-                />
-              </div>
-
-              {/* Row 3: Heavy */}
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  value={dirtHeavy}
-                  onChange={(e) => setDirtHeavy(e.target.value)}
-                  className="h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
-                />
-                <input
-                  type="text"
-                  value={dirtHeavyPrice}
-                  onChange={(e) => setDirtHeavyPrice(e.target.value)}
-                  className="h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
-                />
-              </div>
+              {['light', 'medium', 'heavy'].map((level) => {
+                const dl = dirtLevels.find((d) => d.level === level);
+                return (
+                  <div key={level} className="grid grid-cols-2 gap-4 items-center">
+                    <div className="h-[59px] px-6 text-sm font-semibold rounded-full bg-dark-50/60 text-main-font flex items-center capitalize">
+                      {level}
+                    </div>
+                    <div className="h-[59px] px-6 text-sm font-semibold rounded-full bg-dark-50/60 text-orange-300 font-black flex items-center">
+                      {dl ? `€ ${dl.extraPrice.toFixed(2)}` : '—'}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -276,5 +276,3 @@ export default function CreateServicePage() {
     </form>
   );
 }
-
-
