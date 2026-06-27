@@ -363,37 +363,27 @@ export default function PayoutsPage() {
 
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-6 border-t border-border select-none shrink-0">
-                <button
-                  onClick={() => setSelectedPayoutId(null)}
-                  className="flex items-center justify-center gap-2 h-[46px] bg-dark-50 hover:bg-dark-50/80 text-main-font rounded-full text-caption1-bold font-black uppercase transition-all shadow-sm cursor-pointer active:scale-[0.98]"
-                >
-                  <Icon icon="solar:document-linear" className="w-4 h-4 text-main-font" />
-                  View Receipt
-                </button>
-                
-                <button
-                  onClick={() => {
-                    if (!selectedPayout) return;
-                    exportPdf(`invoice-${selectedPayout.id}.pdf`, `Invoice #${selectedPayout.id}`, [
-                      { header: 'Field', dataKey: 'field' },
-                      { header: 'Value', dataKey: 'value' },
-                    ], [
-                      { field: 'Provider', value: selectedPayout.providerName },
-                      { field: 'Amount', value: `€${selectedPayout.amount.toFixed(2)}` },
-                      { field: 'Date', value: selectedPayout.date },
-                      { field: 'Status', value: selectedPayout.status },
-                      { field: 'Bank', value: selectedPayout.bankName },
-                      { field: 'Account', value: selectedPayout.accountNumber },
-                      { field: 'Transaction', value: selectedPayout.transactionHash },
-                    ]);
-                  }}
-                  className="flex items-center justify-center gap-2 h-[46px] bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold font-black uppercase transition-all shadow-md cursor-pointer active:scale-[0.98]"
-                >
-                  <Icon icon="solar:file-download-linear" className="w-4 h-4 text-white" />
-                  Invoice
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  if (!selectedPayout) return;
+                  exportPdf(`invoice-${selectedPayout.id}.pdf`, `Invoice #${selectedPayout.id}`, [
+                    { header: 'Field', dataKey: 'field' },
+                    { header: 'Value', dataKey: 'value' },
+                  ], [
+                    { field: 'Provider', value: selectedPayout.providerName },
+                    { field: 'Amount', value: `€${selectedPayout.amount.toFixed(2)}` },
+                    { field: 'Date', value: selectedPayout.date },
+                    { field: 'Status', value: selectedPayout.status },
+                    { field: 'Bank', value: selectedPayout.bankName },
+                    { field: 'Account', value: selectedPayout.accountNumber },
+                    { field: 'Transaction', value: selectedPayout.transactionHash },
+                  ]);
+                }}
+                className="w-full flex items-center justify-center gap-2 h-[46px] bg-main-font hover:bg-main-font/90 text-white rounded-full text-caption1-bold font-black uppercase transition-all shadow-md cursor-pointer active:scale-[0.98]"
+              >
+                <Icon icon="solar:file-download-linear" className="w-4 h-4 text-white" />
+                Invoice
+              </button>
 
             </div>
           </div>
