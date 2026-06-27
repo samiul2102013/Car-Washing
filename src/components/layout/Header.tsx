@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '../../providers/AuthProvider';
 
 interface HeaderProps {
@@ -10,8 +11,11 @@ interface HeaderProps {
 }
 
 export default function Header({ onMenuToggle }: HeaderProps) {
+  const pathname = usePathname();
   const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
+
+  const hideSearch = ['/', '/bookings', '/users', '/earnings', '/settings', '/notifications'].includes(pathname);
 
   const mockHeaderNotifications = [
     { id: '1', text: 'New provider signup waiting for review: Michael Scott', time: '1 hr ago' },
@@ -29,17 +33,19 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           <Icon icon="solar:hamburger-menu-linear" className="w-5 h-5" />
         </button>
 
-        <div className="relative w-full max-w-sm">
-          <input
-            type="text"
-            placeholder="Search Task..."
-            className="w-full pl-10 pr-4 py-2.5 text-xs font-semibold rounded-full border-0 bg-white shadow-sm text-main-font placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-orange-300 transition-all duration-200"
-          />
-          <Icon
-            icon="solar:magnifer-linear"
-            className="w-4.5 h-4.5 text-dark-200 absolute left-3.5 top-3"
-          />
-        </div>
+        {!hideSearch && (
+          <div className="relative w-full max-w-sm">
+            <input
+              type="text"
+              placeholder="Search Task..."
+              className="w-full pl-10 pr-4 py-2.5 text-xs font-semibold rounded-full border-0 bg-white shadow-sm text-main-font placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-orange-300 transition-all duration-200"
+            />
+            <Icon
+              icon="solar:magnifer-linear"
+              className="w-4.5 h-4.5 text-dark-200 absolute left-3.5 top-3"
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-3">

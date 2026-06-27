@@ -192,9 +192,12 @@ export default function ServicesPage() {
               <h3 className="text-xl font-bold text-[#2D2F33]">Edit Service</h3>
               <button
                 onClick={() => setEditService(null)}
-                className="w-10 h-10 rounded-full bg-[#E9EBEF] hover:bg-[#DCE0E5] flex items-center justify-center cursor-pointer border-0"
+                className="w-10 h-10 rounded-full bg-[#E9EBEF] hover:bg-[#DCE0E5] flex items-center justify-center cursor-pointer border-0 group"
               >
-                <Icon icon="solar:close-linear" className="w-5 h-5 text-[#2D2F33]" />
+                <svg className="w-5 h-5 text-[#2D2F33] group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                </svg>
               </button>
             </div>
 

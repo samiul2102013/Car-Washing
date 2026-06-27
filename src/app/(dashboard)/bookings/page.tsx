@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { bookingService } from '../../../services';
 import { Booking } from '../../../types';
-import MapView from '../../../components/features/MapView';
+
 import { exportPdf } from '../../../lib/exportPdf';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/table';
 
@@ -17,7 +17,6 @@ function BookingsContent() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
@@ -125,28 +124,10 @@ function BookingsContent() {
           
           <div className="flex bg-dark-50/80 p-1 rounded-full border border-border/40 w-fit shrink-0">
             <button
-              onClick={() => setViewMode('list')}
-              className={`flex items-center gap-2 px-5 py-2 rounded-full text-caption1-bold transition-all cursor-pointer
-                ${viewMode === 'list' 
-                  ? 'bg-orange-50 text-orange-300 border border-orange-100/50 shadow-sm' 
-                  : 'text-dark-300 hover:text-dark-300/80 bg-transparent border border-transparent'
-                }
-              `}
+              className="flex items-center gap-2 px-5 py-2 rounded-full text-caption1-bold bg-orange-50 text-orange-300 border border-orange-100/50 shadow-sm cursor-pointer"
             >
               <Icon icon="solar:list-bold" className="w-4 h-4" />
               List View
-            </button>
-            <button
-              onClick={() => setViewMode('map')}
-              className={`flex items-center gap-2 px-5 py-2 rounded-full text-caption1-bold transition-all cursor-pointer
-                ${viewMode === 'map' 
-                  ? 'bg-orange-50 text-orange-300 border border-orange-100/50 shadow-sm' 
-                  : 'text-dark-300 hover:text-dark-300/80 bg-transparent border border-transparent'
-                }
-              `}
-            >
-              <Icon icon="solar:map-arrow-square-bold" className="w-4 h-4" />
-              Map View
             </button>
           </div>
 
@@ -330,39 +311,30 @@ function BookingsContent() {
 
             </div>
 
-            <div className="lg:col-span-2 relative min-h-[780px] h-full rounded-3xl overflow-hidden border border-border/50 shadow-inner">
-              <MapView 
-                bookings={filteredBookings} 
-                selectedBookingId={selectedBookingId} 
-                onSelectBooking={(id) => setSelectedBookingId(id)}
-              />
-            </div>
-
           </div>
         ) : (
           /* ========================================================================= */
-          /* DEFAULT WORKSPACE VIEWS - ACTIVE WHEN NO BOOKING IS SELECTED */
+          /* DEFAULT WORKSPACE - ACTIVE WHEN NO BOOKING IS SELECTED */
           /* ========================================================================= */
-          viewMode === 'list' ? (
-            <div className="bg-white border border-border/50 rounded-3xl shadow-sm overflow-hidden p-2">
-              <Table className="min-w-[900px]">
-                <TableHeader>
-                  <TableRow className="bg-dark-50/80">
-                    <TableHead className="rounded-l-2xl">Customer</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead className="text-center rounded-r-2xl">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBookings.length > 0 ? (
-                    filteredBookings.map((booking) => (
-                      <TableRow 
-                        key={booking.id}
-                        className="cursor-pointer"
+          <div className="bg-white border border-border/50 rounded-3xl shadow-sm overflow-hidden p-2">
+            <Table className="min-w-[900px]">
+              <TableHeader>
+                <TableRow className="bg-dark-50/80">
+                  <TableHead className="rounded-l-2xl">Customer</TableHead>
+                  <TableHead>Provider</TableHead>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead className="text-center rounded-r-2xl">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredBookings.length > 0 ? (
+                  filteredBookings.map((booking) => (
+                    <TableRow 
+                      key={booking.id}
+                      className="cursor-pointer"
                         onClick={() => setSelectedBookingId(booking.id)}
                       >
                         <TableCell>
@@ -446,48 +418,6 @@ function BookingsContent() {
                 </TableBody>
               </Table>
             </div>
-          ) : (
-            /* MAP INTERACTIVE TELEMETRY VIEW WITH FLOATING LIVE TRACKING OVERLAY MATCHING SCREENSHOT 2 */
-            <div className="relative min-h-[780px] rounded-3xl overflow-hidden border border-border/50 shadow-sm">
-              <MapView 
-                bookings={filteredBookings} 
-                selectedBookingId={selectedBookingId} 
-                onSelectBooking={(id) => setSelectedBookingId(id)}
-              />
-
-              <div className="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-md border border-border p-4.5 rounded-3xl shadow-lg max-w-[280px] animate-slide-up">
-                <h4 className="text-caption1-bold text-main-font flex items-center gap-1.5">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
-                  Live Tracking
-                </h4>
-                <p className="text-caption1 text-dark-200 font-medium leading-normal mt-1">
-                  Monitoring 7 active service routes across the city
-                </p>
-                <div className="flex items-center gap-2 mt-3.5">
-                  <div className="flex -space-x-2.5">
-                    <img 
-                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=40" 
-                      alt="Provider 1"
-                      className="w-5.5 h-5.5 rounded-full object-cover border border-white"
-                    />
-                    <img 
-                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=40" 
-                      alt="Provider 2"
-                      className="w-5.5 h-5.5 rounded-full object-cover border border-white"
-                    />
-                    <img 
-                      src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=40" 
-                      alt="Provider 3"
-                      className="w-5.5 h-5.5 rounded-full object-cover border border-white"
-                    />
-                  </div>
-                  <span className="text-caption1-bold text-dark-300">
-                    +4 Active Providers
-                  </span>
-                </div>
-              </div>
-            </div>
-          )
         )}
       </div>
     </div>
