@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import Link from 'next/link';
-import { vehicleTypeService, engineTypeService } from '../../../services';
-import { VehicleType, EngineType } from '../../../types';
+import { vehicleTypeService, engineTypeService, dirtLevelService } from '../../../services';
+import { VehicleType, EngineType, DirtLevel } from '../../../types';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/table';
 
 export default function CarTypesPage() {
@@ -18,6 +18,21 @@ export default function CarTypesPage() {
   // Engine Types state
   const [engineTypes, setEngineTypes] = useState<EngineType[]>([]);
   const [etLoading, setEtLoading] = useState(true);
+
+  // Dirt Levels state
+  const [dirtLevels, setDirtLevels] = useState<DirtLevel[]>([]);
+  const [dlLoading, setDlLoading] = useState(true);
+
+  // Add Dirt Level form
+  const [dlLevel, setDlLevel] = useState<'light' | 'medium' | 'heavy'>('light');
+  const [dlLevelDesc, setDlLevelDesc] = useState('');
+  const [dlExtraPrice, setDlExtraPrice] = useState('');
+
+  // Edit Dirt Level state
+  const [editingDl, setEditingDl] = useState<DirtLevel | null>(null);
+  const [editDlDesc, setEditDlDesc] = useState('');
+  const [editDlExtraPrice, setEditDlExtraPrice] = useState('');
+
 
   // Add Vehicle Type form
   const [carName, setCarName] = useState('');
@@ -38,17 +53,21 @@ export default function CarTypesPage() {
     try {
       setVtLoading(true);
       setEtLoading(true);
-      const [vts, ets] = await Promise.all([
+      setDlLoading(true);
+      const [vts, ets, dls] = await Promise.all([
         vehicleTypeService.list(),
         engineTypeService.list(),
+        dirtLevelService.list(),
       ]);
       setVehicleTypes(vts);
       setEngineTypes(ets);
+      setDirtLevels(dls);
     } catch {
       // handled
     } finally {
       setVtLoading(false);
       setEtLoading(false);
+      setDlLoading(false);
     }
   };
 
@@ -142,7 +161,62 @@ export default function CarTypesPage() {
     }
   };
 
-  if (!mounted || (vtLoading && etLoading)) {
+  const handleAddDl = async () => {
+    if (!dlExtraPrice) return;
+    setSending(true);
+    try {
+      await dirtLevelService.add({
+        level: dlLevel,
+        description: dlLevelDesc,
+        extra_price: dlExtraPrice,
+      });
+      setDlLevelDesc('');
+      setDlExtraPrice('');
+      await fetchAll();
+    } catch {
+      // handled
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleClearDl = () => {
+    setDlLevel('light');
+    setDlLevelDesc('');
+    setDlExtraPrice('');
+  };
+
+  const handleStartEditDl = (dl: DirtLevel) => {
+    setEditingDl(dl);
+    setEditDlDesc(dl.description);
+    setEditDlExtraPrice(String(dl.extraPrice));
+  };
+
+  const handleSaveEditDl = async () => {
+    if (!editingDl) return;
+    try {
+      await dirtLevelService.update(editingDl.id, {
+        description: editDlDesc,
+        extra_price: editDlExtraPrice,
+      });
+      setEditingDl(null);
+      await fetchAll();
+    } catch {
+      // handled
+    }
+  };
+
+  const handleDeleteDl = async (id: number) => {
+    if (!confirm('Delete this dirt level?')) return;
+    try {
+      await dirtLevelService.remove(id);
+      await fetchAll();
+    } catch {
+      // handled
+    }
+  };
+
+  if (!mounted || (vtLoading && etLoading && dlLoading)) {
     return <CarTypesLoadingSkeleton />;
   }
 
@@ -462,6 +536,174 @@ export default function CarTypesPage() {
           </div>
         </div>
       )}
+      {/* 5. Dirt Levels Management Section */}
+      <div className="space-y-4 pt-8">
+        <div>
+          <h2 className="text-h5-bold text-main-font tracking-tight">
+            Dirt Levels
+          </h2>
+          <p className="text-caption1 text-dark-200 font-semibold mt-1">
+            Manage dirt level pricing applied to service totals.
+          </p>
+        </div>
+
+        {/* Add Dirt Level Form */}
+        <div className="bg-white border border-border rounded-xl p-8 shadow-sm space-y-6">
+          <h3 className="text-h5-bold text-main-font tracking-tight">
+            Add Dirt Level
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl">
+            <div className="space-y-2">
+              <span className="block text-caption1-bold text-dark-200 uppercase tracking-wider">Level</span>
+              <div className="bg-dark-50/65 p-1 rounded-full h-[59px] flex items-center w-full select-none">
+                {(['light', 'medium', 'heavy'] as const).map((lv) => (
+                  <button
+                    key={lv}
+                    type="button"
+                    onClick={() => setDlLevel(lv)}
+                    className={`flex-1 h-full flex items-center justify-center rounded-full text-xs font-bold transition-all cursor-pointer capitalize
+                      ${dlLevel === lv
+                        ? 'bg-white text-orange-300 shadow-sm border border-border/50'
+                        : 'text-dark-300 hover:text-main-font bg-transparent'
+                      }
+                    `}
+                  >
+                    {lv}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <span className="block text-caption1-bold text-dark-200 uppercase tracking-wider">Extra Price</span>
+              <input
+                type="text"
+                value={dlExtraPrice}
+                onChange={(e) => setDlExtraPrice(e.target.value)}
+                placeholder="10.00"
+                className="w-full h-[59px] px-6 text-sm font-extrabold rounded-full border-0 bg-dark-50/60 text-main-font placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
+              />
+            </div>
+            <div className="space-y-2">
+              <span className="block text-caption1-bold text-dark-200 uppercase tracking-wider">Description</span>
+              <input
+                type="text"
+                value={dlLevelDesc}
+                onChange={(e) => setDlLevelDesc(e.target.value)}
+                placeholder="Heavy soiling surcharge"
+                className="w-full h-[59px] px-6 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font placeholder-dark-200 focus:outline-none focus:ring-1 focus:ring-dark-300 transition-all"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end pt-2 gap-4">
+            <button
+              type="button"
+              onClick={handleClearDl}
+              className="flex items-center justify-center w-[276px] h-[58px] bg-dark-50 hover:bg-[#DCE0E5] text-dark-300 rounded-full text-sm font-bold transition-all shadow-sm cursor-pointer active:scale-95"
+            >
+              Clear Form
+            </button>
+            <button
+              type="button"
+              onClick={handleAddDl}
+              disabled={sending || !dlExtraPrice}
+              className="flex items-center justify-center w-[277px] h-[59px] bg-main-font hover:bg-main-font/90 text-white rounded-full text-sm font-bold transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sending ? 'Adding...' : 'Add Dirt Level'}
+            </button>
+          </div>
+        </div>
+
+        {/* Dirt Levels Table */}
+        <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Level</TableHead>
+                <TableHead>Extra Price</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dlLoading ? (
+                <TableRow><TableCell colSpan={4} className="text-center py-8 text-dark-300">Loading...</TableCell></TableRow>
+              ) : dirtLevels.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="text-center py-8 text-dark-300">No dirt levels found.</TableCell></TableRow>
+              ) : (
+                dirtLevels.map((dl) => (
+                  <TableRow key={dl.id}>
+                    <TableCell className="font-black text-main-font capitalize">{dl.level}</TableCell>
+                    <TableCell>
+                      <span className="text-orange-300 font-bold mr-1">€</span>
+                      <span className="text-main-font font-extrabold">{dl.extraPrice.toFixed(2)}</span>
+                    </TableCell>
+                    <TableCell className="text-dark-300">{dl.description}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleStartEditDl(dl)}
+                          className="p-1.5 bg-dark-50 hover:bg-[#E9EBEF] text-[#5C5F66] rounded-[6px] border border-border/50 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
+                        >
+                          <Icon icon="solar:pen-linear" className="w-4.5 h-4.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDl(dl.id)}
+                          className="p-1.5 bg-[#FFE6E6] hover:bg-[#FFD4D4] text-[#C5221F] rounded-[6px] border border-rose-200/30 transition-all cursor-pointer inline-flex items-center justify-center shadow-sm active:scale-95"
+                        >
+                          <Icon icon="solar:trash-bin-trash-linear" className="w-4.5 h-4.5" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Edit Dirt Level Modal */}
+      {editingDl && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[32px] w-full max-w-[440px] shadow-2xl p-8 z-10 animate-scale-up space-y-6">
+            <h3 className="text-xl font-bold text-[#2D2F33] capitalize">Edit Dirt Level — {editingDl.level}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-dark-200 mb-1.5">Extra Price (€)</label>
+                <input
+                  type="text"
+                  value={editDlExtraPrice}
+                  onChange={(e) => setEditDlExtraPrice(e.target.value)}
+                  className="w-full h-[50px] px-5 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-dark-200 mb-1.5">Description</label>
+                <input
+                  type="text"
+                  value={editDlDesc}
+                  onChange={(e) => setEditDlDesc(e.target.value)}
+                  className="w-full h-[50px] px-5 text-sm font-semibold rounded-full border-0 bg-dark-50/60 text-main-font focus:outline-none focus:ring-1 focus:ring-dark-300"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setEditingDl(null)}
+                className="flex-1 h-[46px] rounded-full bg-[#E9EBEF] hover:bg-[#DCE0E5] text-[#2D2F33] text-xs font-bold transition-all cursor-pointer border-0"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEditDl}
+                className="flex-1 h-[46px] rounded-full bg-main-font hover:bg-main-font/90 text-white text-xs font-bold transition-all cursor-pointer border-0"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
@@ -475,6 +717,7 @@ function CarTypesLoadingSkeleton() {
         <div className="h-3 w-64 bg-dark-50 rounded-lg"></div>
       </div>
       <div className="h-80 w-full bg-dark-50 rounded-2xl"></div>
+
     </div>
   );
 }
